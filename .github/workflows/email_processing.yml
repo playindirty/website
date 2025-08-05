@@ -31,10 +31,11 @@ jobs:
 
       - name: Verify DB Connection
         run: |
-          echo "Testing connection to: ${{ secrets.SUPABASE_HOST }}"
-          pg_isready -h ${{ secrets.SUPABASE_HOST }} -p ${{ env.PG_PORT }} -t 10
+          echo "Testing connection to: $DB_HOST"
+          pg_isready -h "$DB_HOST" -p $PG_PORT -t 10
         env:
-          SUPABASE_HOST: ${{ secrets.SUPABASE_DB_URL | regex_replace('^.*@([^:/]+).*$', '\\1') }}
+          DB_HOST: ${{ fromJson('{"tmp":"' + secrets.SUPABASE_DB_URL + '"}').tmp.split('@')[1].split(':')[0].split('/')[0] }}
+          PG_PORT: ${{ env.PG_PORT }}
 
       - name: Run Email Processor
         env:
@@ -51,5 +52,3 @@ jobs:
             echo "::warning::Email processing failed"
             exit 0  # Prevent workflow failure for transient errors
           fi
-
-      
