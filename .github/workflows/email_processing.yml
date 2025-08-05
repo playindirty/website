@@ -4,77 +4,15 @@ on:
   schedule:
     - cron: '*/5 * * * *'  # Every 5 minutes
   workflow_dispatch:  # Manual trigger
-  repository_dispatch:  # API trigger
-
-env:
-  PYTHON_VERSION: '3.11'
-  PG_PORT: 5432
 
 jobs:
   process-emails:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          sudo apt-get install -y postgresql-client
-
-      - name: Extract DB host and verify connection
-        id: db-check
-        run: |
-          # Safely extract host from connection string
-          DB_URL="${{ secrets.SUPABASE_DB_URL }}"
-          
-          # First try standard PostgreSQL format
-          if [[ "$DB_URL" =~ @([^:/]+) ]]; then
-            DB_HOST=${BASH_REMATCH[1]}
-          # Fallback for other formats
-          else
-            DB_HOST=$(echo "$DB_URL" | sed -e 's|^.*@||' -e 's|:.*||' -e 's|/.*||')
-          fi
-          
-          echo "Extracted DB host: $DB_HOST"
-          
-          # Validate host format
-          if [[ -z "$DB_HOST" || "$DB_HOST" =~ ^[0-9.:]+$ ]]; then
-            echo "::error::Invalid DB host format: $DB_HOST"
-            exit 1
-          fi
-          
-          # Test connection
-          if pg_isready -h "$DB_HOST" -p $PG_PORT -t 10; then
-            echo "DB connection successful"
-            echo "DB_HOST=$DB_HOST" >> $GITHUB_ENV
-          else
-            echo "::error::Database connection failed to $DB_HOST:$PG_PORT"
-            echo "::error::Verify your SUPABASE_DB_URL format: postgresql://user:password@host:port/dbname"
-            exit 1
-          fi
-        env:
-          PG_PORT: ${{ env.PG_PORT }}
-
-      - name: Run Email Processor
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}?sslmode=require
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
-        run: |
-          set +e
-          python send_scheduled_emails.py
-          if [ $? -ne 0 ]; then
-            echo "::warning::Email processing failed"
-            exit 0
-          fi
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: python send_scheduled_emails.py
