@@ -29,8 +29,13 @@ class LeadCreate(BaseModel):
     email: str
 
 # DB helper
-def get_db_connection(autocommit=False):
-    conn = psycopg2.connect(DB_URL)
+def get_db_connection(autocommit: bool = False):
+    # Force an SSL TCP connection
+    conn = psycopg2.connect(
+        dsn=DB_URL,
+        sslmode="require",
+        connect_timeout=10
+    )
     if autocommit:
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     return conn
