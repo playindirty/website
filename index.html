@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Lead Generator for Real Estate | LeadBot Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/index.min.js"></script>
+    <!-- Load Supabase with defer to ensure it loads before DOMContentLoaded -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
     <style>
         /* Core Colors */
         :root {
@@ -676,45 +677,71 @@
 
 
   <script>
-        // Wait for DOM to be fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Your Supabase creds
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOM fully loaded');
+            
+            // Check if Supabase is loaded
+            if (typeof supabase === 'undefined') {
+                console.error('Supabase not loaded!');
+                return;
+            }
+            
+            console.log('Supabase loaded successfully:', supabase);
+
+            // Your Supabase configuration
             const SUPABASE_URL = 'https://ozbiubgszrvjdeogkvke.supabase.co';
-            const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';
 
-            // Create your client
-            const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+            // Initialize Supabase client
+            const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase client created:', sb);
 
-            // Form handler to save the lead and download the PDF
-            document.getElementById('leadForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
+            // Form submission handler
+            const leadForm = document.getElementById('leadForm');
+            if (leadForm) {
+                leadForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
 
-                const name = e.target.querySelector('input[type="text"]').value.trim();
-                const email = e.target.querySelector('input[type="email"]').value.trim();
-                if (!name || !email) {
-                    return alert('Please enter both your name and email.');
-                }
-
-                try {
-                    // Insert the lead
-                    const { error: insertErr } = await sb.from('leads').insert({ name, email });
-                    if (insertErr) throw insertErr;
-
-                    // Create a signed URL for playbook-2025.pdf (1h expiry)
-                    const { data: urlData, error: urlErr } = await sb
-                        .storage
-                        .from('documents')
-                        .createSignedUrl('playbook-2025.pdf', 3600);
+                    const name = e.target.querySelector('input[type="text"]').value.trim();
+                    const email = e.target.querySelector('input[type="email"]').value.trim();
                     
-                    if (urlErr || !urlData?.signedUrl) throw urlErr;
+                    if (!name || !email) {
+                        alert('Please enter both your name and email.');
+                        return;
+                    }
 
-                    // Redirect to download
-                    window.location.href = urlData.signedUrl;
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again later.');
-                }
-            });
+                    try {
+                        console.log('Submitting lead:', { name, email });
+                        
+                        // Insert lead
+                        const { error: insertError } = await sb
+                            .from('leads')
+                            .insert({ name, email });
+                        
+                        if (insertError) throw insertError;
+
+                        console.log('Lead inserted successfully');
+                        
+                        // Get download URL
+                        const { data: urlData, error: urlError } = await sb
+                            .storage
+                            .from('documents')
+                            .createSignedUrl('playbook-2025.pdf', 3600);
+                        
+                        if (urlError || !urlData?.signedUrl) throw urlError;
+
+                        console.log('Download URL generated:', urlData.signedUrl);
+                        
+                        // Redirect to download
+                        window.location.href = urlData.signedUrl;
+                    } catch (error) {
+                        console.error('Error during form submission:', error);
+                        alert('An error occurred. Please try again later.');
+                    }
+                });
+            } else {
+                console.error('Lead form not found!');
+            }
         });
     </script>
 
