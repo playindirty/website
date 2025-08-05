@@ -715,5 +715,54 @@
             observer.observe(card);
         });
     </script>
+    <!-- 1) Load Supabase client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+
+<script>
+  // 2) Initialize
+  const SUPABASE_URL   = 'https://ozbiubgszrvjdeogkvke.supabase.co';       // ← your URL
+  const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY'; // ← your anon key
+  const supabase       = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // 3) Reference your form
+  const form = document.getElementById('leadForm');
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const name  = this.querySelector('input[type="text"]').value.trim();
+    const email = this.querySelector('input[type="email"]').value.trim();
+
+    if (!name || !email) {
+      alert('Please enter both name and email.');
+      return;
+    }
+
+    // 4) Insert into your 'leads' table
+    const { error } = await supabase
+      .from('leads')
+      .insert({ name, email });
+
+    if (error) {
+      console.error('Error saving lead:', error);
+      alert('Oops! Something went wrong. Please try again later.');
+      return;
+    }
+
+    // 5) Generate a signed URL for the PDF (valid 1 hour)
+    const { data: urlData, error: urlError } = await supabase
+      .storage
+      .from('documents')
+      .createSignedUrl('playbook-2025.pdf', 60 * 60);
+
+    if (urlError || !urlData.signedUrl) {
+      console.error('Error generating download link:', urlError);
+      alert('Lead saved, but couldn’t get your download link. Please contact us.');
+      return;
+    }
+
+    // 6) Let the user download
+    window.location.href = urlData.signedUrl;
+  });
+</script>
 </body>
 </html>
