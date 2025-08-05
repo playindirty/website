@@ -1,0 +1,7 @@
+services:
+  - type: cron
+    name: send-email-job
+    env: python
+    schedule: "*/5 * * * *"  # every 5 mins
+    buildCommand: ""
+    startCommand: python send_emails.py
