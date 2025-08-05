@@ -14,7 +14,7 @@ DB_CONFIG = {
     "port": 5432,
     "dbname": "postgres",
     "user": "postgres",
-    "password": "your_db_password_here",
+    "password": "Lornav22@",
     "sslmode": "require",
     "connect_timeout": 5,
     "keepalives": 1,
@@ -23,12 +23,12 @@ DB_CONFIG = {
 }
 
 SMTP_CONFIG = {
-    "host": "your.smtp.server.com",
+    "host": "smtp.gmail.com",
     "port": 587,
     "timeout": 10,
-    "user": "your_email@example.com",
-    "password": "your_smtp_password",
-    "from_email": "your_email@example.com"
+    "user": "replyzeai@gmail.com",
+    "password": "iwdl cbvy htyr bvod",
+    "from_email": "replyzeai@gmail.com"
 }
 
 # ── CONSTANTS ────────────────────────────────────────────────────────────
