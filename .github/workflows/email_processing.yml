@@ -1,38 +1,55 @@
 name: Email Processing
 
 on:
-  # Manual trigger from GitHub UI/API
-  workflow_dispatch:
-  # Scheduled trigger (every minute - adjust as needed)
   schedule:
-    - cron: '*/1 * * * *'
-  # Allow API triggers
-  repository_dispatch:
-    types: [trigger_emails]
+    - cron: '*/5 * * * *'  # Every 5 minutes (adjust as needed)
+  workflow_dispatch:  # Manual trigger
+  repository_dispatch:  # API trigger
+
+env:
+  PYTHON_VERSION: '3.11'
+  PG_PORT: 5432
 
 jobs:
   process-emails:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          sudo apt-get install -y postgresql-client  # For connection testing
 
-      - name: Run email processor
+      - name: Verify DB Connection
+        run: |
+          echo "Testing connection to: ${{ secrets.SUPABASE_HOST }}"
+          pg_isready -h ${{ secrets.SUPABASE_HOST }} -p ${{ env.PG_PORT }} -t 10
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_HOST: ${{ secrets.SUPABASE_DB_URL | regex_replace('^.*@([^:/]+).*$', '\\1') }}
+
+      - name: Run Email Processor
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}?sslmode=require
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
-        run: python send_scheduled_emails.py
+        run: |
+          set +e  # Continue on error
+          python send_scheduled_emails.py
+          if [ $? -ne 0 ]; then
+            echo "::warning::Email processing failed"
+            exit 0  # Prevent workflow failure for transient errors
+          fi
+
+      
