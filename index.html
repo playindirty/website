@@ -677,84 +677,98 @@
 
 
   <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-    console.log('DOM fully loaded');
-    
-    if (typeof supabase === 'undefined') {
-        console.error('Supabase not loaded!');
-        return;
-    }
-    
-    console.log('Supabase loaded successfully:', supabase);
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('DOM fully loaded');
+        
+        if (typeof supabase === 'undefined') {
+            console.error('Supabase not loaded!');
+            return;
+        }
+        
+        console.log('Supabase loaded successfully:', supabase);
 
-    const SUPABASE_URL = 'https://ozbiubgszrvjdeogkvke.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';
+        const SUPABASE_URL = 'https://ozbiubgszrvjdeogkvke.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';
 
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('Supabase client created:', sb);
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Supabase client created:', sb);
 
-    const leadForm = document.getElementById('leadForm');
-    if (leadForm) {
-        leadForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        const leadForm = document.getElementById('leadForm');
+        if (leadForm) {
+            leadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-            const name = e.target.querySelector('input[type="text"]').value.trim();
-            const email = e.target.querySelector('input[type="email"]').value.trim();
-            
-            if (!name || !email) {
-                alert('Please enter both your name and email.');
-                return;
-            }
-
-            try {
-                console.log('Submitting lead:', { name, email });
+                const name = e.target.querySelector('input[type="text"]').value.trim();
+                const email = e.target.querySelector('input[type="email"]').value.trim();
                 
-                // Insert lead
-                const { error: insertError } = await sb
-                    .from('leads')
-                    .insert({ name, email });
-                
-                if (insertError) throw insertError;
-
-                console.log('Lead inserted successfully');
-                
-                // First check if file exists
-                const { data: fileList, error: listError } = await sb
-                    .storage
-                    .from('documents')
-                    .list();
-                
-                if (listError) throw listError;
-                console.log('Files in documents bucket:', fileList);
-
-                // Check if our file exists
-                const fileExists = fileList.some(file => file.name === 'playbook-2025.pdf');
-                if (!fileExists) {
-                    throw new Error('File playbook-2025.pdf not found in documents bucket');
+                if (!name || !email) {
+                    alert('Please enter both your name and email.');
+                    return;
                 }
 
-                // Get download URL
-                const { data: urlData, error: urlError } = await sb
-                    .storage
-                    .from('documents')
-                    .createSignedUrl('playbook-2025.pdf', 3600);
-                
-                if (urlError || !urlData?.signedUrl) throw urlError;
+                try {
+                    console.log('Submitting lead:', { name, email });
+                    
+                    // Insert lead
+                    const { error: insertError } = await sb
+                        .from('leads')
+                        .insert({ name, email });
+                    
+                    if (insertError) throw insertError;
 
-                console.log('Download URL generated:', urlData.signedUrl);
-                
-                // Redirect to download
-                window.location.href = urlData.signedUrl;
-            } catch (error) {
-                console.error('Error during form submission:', error);
-                alert(`Error: ${error.message}. Please contact support.`);
-            }
-        });
-    } else {
-        console.error('Lead form not found!');
-    }
-});
-    </script>
+                    console.log('Lead inserted successfully');
+                    
+                    // First check if file exists
+                    const { data: fileList, error: listError } = await sb
+                        .storage
+                        .from('documents')
+                        .list();
+                    
+                    if (listError) throw listError;
+                    console.log('Files in documents bucket:', fileList);
+
+                    // Check if our file exists
+                    const fileExists = fileList.some(file => file.name === 'playbook-2025.pdf');
+                    if (!fileExists) {
+                        throw new Error('File playbook-2025.pdf not found in documents bucket');
+                    }
+
+                    // Get download URL
+                    const { data: urlData, error: urlError } = await sb
+                        .storage
+                        .from('documents')
+                        .createSignedUrl('playbook-2025.pdf', 3600);
+                    
+                    if (urlError || !urlData?.signedUrl) throw urlError;
+
+                    console.log('Download URL generated:', urlData.signedUrl);
+                    
+                    // Create hidden anchor tag to force download
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = urlData.signedUrl;
+                    downloadLink.download = 'LeadBot-Pro-Playbook-2025.pdf'; // Custom filename
+                    downloadLink.style.display = 'none';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    
+                    // Clean up
+                    setTimeout(() => {
+                        document.body.removeChild(downloadLink);
+                    }, 100);
+                    
+                    // Show success message
+                    alert('Thank you! Your download should begin shortly.');
+                    
+                } catch (error) {
+                    console.error('Error during form submission:', error);
+                    alert(`Error: ${error.message}. Please contact support.`);
+                }
+            });
+        } else {
+            console.error('Lead form not found!');
+        }
+    });
+</script>
 
 </body>
 </html>
