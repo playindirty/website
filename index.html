@@ -733,40 +733,29 @@
                         throw new Error('File playbook-2025.pdf not found in documents bucket');
                     }
 
-                    // Get download URL
-                    const { data: urlData, error: urlError } = await sb
-                        .storage
-                        .from('documents')
-                        .createSignedUrl('playbook-2025.pdf', 3600);
-                    
-                    if (urlError || !urlData?.signedUrl) throw urlError;
+                    // Download PDF as Blob
+                const { data: fileBlob, error: downloadError } = await sb
+                    .storage
+                    .from('documents')
+                    .download('playbook-2025.pdf');
+                if (downloadError) throw downloadError;
 
-                    console.log('Download URL generated:', urlData.signedUrl);
-                    
-                    // Create hidden anchor tag to force download
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = urlData.signedUrl;
-                    downloadLink.download = 'LeadBot-Pro-Playbook-2025.pdf'; // Custom filename
-                    downloadLink.style.display = 'none';
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    
-                    // Clean up
-                    setTimeout(() => {
-                        document.body.removeChild(downloadLink);
-                    }, 100);
-                    
-                    // Show success message
-                    alert('Thank you! Your download should begin shortly.');
-                    
-                } catch (error) {
-                    console.error('Error during form submission:', error);
-                    alert(`Error: ${error.message}. Please contact support.`);
-                }
-            });
-        } else {
-            console.error('Lead form not found!');
-        }
+                // Force download
+                const blobUrl = URL.createObjectURL(fileBlob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = 'LeadBot-Pro-Playbook-2025.pdf';
+                document.body.appendChild(a);
+                a.click();
+                URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+
+                alert('Thank you! Your download should begin shortly.');
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error: ${error.message}. Please contact support.`);
+            }
+        });
     });
 </script>
 
