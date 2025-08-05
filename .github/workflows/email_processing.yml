@@ -30,38 +30,38 @@ jobs:
           sudo apt-get install -y postgresql-client
 
       - name: Extract DB host and verify connection
-  id: db-check
-  run: |
-    # Safely extract host from connection string
-    DB_URL="${{ secrets.SUPABASE_DB_URL }}"
-    
-    # First try standard PostgreSQL format
-    if [[ "$DB_URL" =~ @([^:/]+) ]]; then
-      DB_HOST=${BASH_REMATCH[1]}
-    # Fallback for other formats
-    else
-      DB_HOST=$(echo "$DB_URL" | sed -e 's|^.*@||' -e 's|:.*||' -e 's|/.*||')
-    fi
-    
-    echo "Extracted DB host: $DB_HOST"
-    
-    # Validate host format
-    if [[ -z "$DB_HOST" || "$DB_HOST" =~ ^[0-9.:]+$ ]]; then
-      echo "::error::Invalid DB host format: $DB_HOST"
-      exit 1
-    fi
-    
-    # Test connection
-    if pg_isready -h "$DB_HOST" -p $PG_PORT -t 10; then
-      echo "DB connection successful"
-      echo "DB_HOST=$DB_HOST" >> $GITHUB_ENV
-    else
-      echo "::error::Database connection failed to $DB_HOST:$PG_PORT"
-      echo "::error::Verify your SUPABASE_DB_URL format: postgresql://user:password@host:port/dbname"
-      exit 1
-    fi
-  env:
-    PG_PORT: ${{ env.PG_PORT }}
+        id: db-check
+        run: |
+          # Safely extract host from connection string
+          DB_URL="${{ secrets.SUPABASE_DB_URL }}"
+          
+          # First try standard PostgreSQL format
+          if [[ "$DB_URL" =~ @([^:/]+) ]]; then
+            DB_HOST=${BASH_REMATCH[1]}
+          # Fallback for other formats
+          else
+            DB_HOST=$(echo "$DB_URL" | sed -e 's|^.*@||' -e 's|:.*||' -e 's|/.*||')
+          fi
+          
+          echo "Extracted DB host: $DB_HOST"
+          
+          # Validate host format
+          if [[ -z "$DB_HOST" || "$DB_HOST" =~ ^[0-9.:]+$ ]]; then
+            echo "::error::Invalid DB host format: $DB_HOST"
+            exit 1
+          fi
+          
+          # Test connection
+          if pg_isready -h "$DB_HOST" -p $PG_PORT -t 10; then
+            echo "DB connection successful"
+            echo "DB_HOST=$DB_HOST" >> $GITHUB_ENV
+          else
+            echo "::error::Database connection failed to $DB_HOST:$PG_PORT"
+            echo "::error::Verify your SUPABASE_DB_URL format: postgresql://user:password@host:port/dbname"
+            exit 1
+          fi
+        env:
+          PG_PORT: ${{ env.PG_PORT }}
 
       - name: Run Email Processor
         env:
