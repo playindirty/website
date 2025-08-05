@@ -670,47 +670,45 @@
         </div>
     </footer>
 
-    <!-- 1) Load the Supabase JS client -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.30.0/dist/umd/index.min.js"></script>
 
+    
 <script>
   // 2) Initialize Supabase
   const SUPABASE_URL   = 'https://ozbiubgszrvjdeogkvke.supabase.co';       // ← your Supabase URL
   const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';        // ← your anon key
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  // Initialize under “sb” so we never shadow the global
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  // 3) Single form handler using `sb`
-  document.getElementById('leadForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+      // Single form handler
+      document.getElementById('leadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name  = e.target.querySelector('input[type="text"]').value.trim();
+        const email = e.target.querySelector('input[type="email"]').value.trim();
+        if (!name || !email) {
+          return alert('Please enter both your name and email.');
+        }
 
-    const name  = e.target.querySelector('input[type="text"]').value.trim();
-    const email = e.target.querySelector('input[type="email"]').value.trim();
-    if (!name || !email) {
-      return alert('Please enter both your name and email.');
-    }
+        // 1) Insert into `leads`
+        const { error: insertErr } = await sb.from('leads').insert({ name, email });
+        if (insertErr) {
+          console.error('Insert error:', insertErr);
+          return alert('Couldn’t save your info—please try again.');
+        }
 
-    // 4) Insert into 'leads'
-    const { error: insertErr } = await sb
-      .from('leads')
-      .insert({ name, email });
-    if (insertErr) {
-      console.error('Insert error:', insertErr);
-      return alert('Couldn’t save your info—please try again.');
-    }
+        // 2) Create a signed URL (expires in 1h)
+        const { data: urlData, error: urlErr } = await sb
+          .storage
+          .from('documents')
+          .createSignedUrl('playbook-2025.pdf', 3600);
+        if (urlErr || !urlData?.signedUrl) {
+          console.error('Signed URL error:', urlErr);
+          return alert('Saved, but couldn’t generate download link.');
+        }
 
-    // 5) Generate signed URL for the PDF (expires in 1 hour)
-    const { data: urlData, error: urlErr } = await sb
-      .storage
-      .from('documents')
-      .createSignedUrl('playbook-2025.pdf', 3600);
-    if (urlErr || !urlData?.signedUrl) {
-      console.error('Signed URL error:', urlErr);
-      return alert('Saved, but couldn’t generate download link.');
-    }
-
-    // 6) Redirect user to download the PDF
-    window.location.href = urlData.signedUrl;
-  });
-</script>
+        // 3) Redirect to trigger download
+        window.location.href = urlData.signedUrl;
+      });
+    </script>
 </body>
 </html>
