@@ -676,44 +676,47 @@
 
 
   <script>
-    // 2) Your Supabase creds
-    const SUPABASE_URL  = 'https://ozbiubgszrvjdeogkvke.supabase.co';
-    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY'; // ← your anon key
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Your Supabase creds
+            const SUPABASE_URL = 'https://ozbiubgszrvjdeogkvke.supabase.co';
+            const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';
 
-    // 3) Now that window.supabase is defined, create your client
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+            // Create your client
+            const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    // 4) One form handler to save the lead and download the PDF
-    document.getElementById('leadForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+            // Form handler to save the lead and download the PDF
+            document.getElementById('leadForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-      const name  = e.target.querySelector('input[type="text"]').value.trim();
-      const email = e.target.querySelector('input[type="email"]').value.trim();
-      if (!name || !email) {
-        return alert('Please enter both your name and email.');
-      }
+                const name = e.target.querySelector('input[type="text"]').value.trim();
+                const email = e.target.querySelector('input[type="email"]').value.trim();
+                if (!name || !email) {
+                    return alert('Please enter both your name and email.');
+                }
 
-      // Insert the lead
-      const { error: insertErr } = await sb.from('leads').insert({ name, email });
-      if (insertErr) {
-        console.error('Insert error:', insertErr);
-        return alert('Couldn’t save your info—please try again.');
-      }
+                try {
+                    // Insert the lead
+                    const { error: insertErr } = await sb.from('leads').insert({ name, email });
+                    if (insertErr) throw insertErr;
 
-      // Create a signed URL for playbook-2025.pdf (1h expiry)
-      const { data: urlData, error: urlErr } = await sb
-        .storage
-        .from('documents')
-        .createSignedUrl('playbook-2025.pdf', 3600);
-      if (urlErr || !urlData?.signedUrl) {
-        console.error('Signed URL error:', urlErr);
-        return alert('Saved, but couldn’t generate download link.');
-      }
+                    // Create a signed URL for playbook-2025.pdf (1h expiry)
+                    const { data: urlData, error: urlErr } = await sb
+                        .storage
+                        .from('documents')
+                        .createSignedUrl('playbook-2025.pdf', 3600);
+                    
+                    if (urlErr || !urlData?.signedUrl) throw urlErr;
 
-      // Redirect to download
-      window.location.href = urlData.signedUrl;
-    });
-  </script>
+                    // Redirect to download
+                    window.location.href = urlData.signedUrl;
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again later.');
+                }
+            });
+        });
+    </script>
 
 </body>
 </html>
