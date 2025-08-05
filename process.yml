@@ -1,7 +1,32 @@
+
 services:
-  - type: cron
-    name: send-email-job
+  #───────────────────────────────────────────────────────────────────────────
+  # 1. Your FastAPI web app (always-on listener + HTTP endpoints)
+  #───────────────────────────────────────────────────────────────────────────
+  - type: web
+    name: website
     env: python
-    schedule: "*/5 * * * *"  # every 5 mins
-    buildCommand: ""
-    startCommand: python send_emails.py
+    plan: free                  # choose your plan
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+
+  #───────────────────────────────────────────────────────────────────────────
+  # 2. Cron job to auto-send emails every minute (or adjust schedule)
+  #───────────────────────────────────────────────────────────────────────────
+  - type: cron
+    name: email-cron
+    env: python
+    plan: free
+    schedule: "*/1 * * * *"     # every minute; change as you like
+    buildCommand: pip install -r requirements.txt
+    startCommand: python send_scheduled_emails.py
+
+  #───────────────────────────────────────────────────────────────────────────
+  # 3. Manual worker you can trigger on-demand from the Dashboard
+  #───────────────────────────────────────────────────────────────────────────
+  - type: worker
+    name: email-worker
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python send_scheduled_emails.py
