@@ -27,14 +27,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          sudo apt-get install -y postgresql-client  # For connection testing
+          sudo apt-get install -y postgresql-client
 
       - name: Verify DB Connection
         run: |
           echo "Testing connection to: $DB_HOST"
           pg_isready -h "$DB_HOST" -p $PG_PORT -t 10
         env:
-          DB_HOST: ${{ fromJson('{"tmp":"' + secrets.SUPABASE_DB_URL + '"}').tmp.split('@')[1].split(':')[0].split('/')[0] }}
+          DB_HOST: ${{ format('{0}', secrets.SUPABASE_DB_URL).split('@')[1].split(':')[0].split('/')[0] }}
           PG_PORT: ${{ env.PG_PORT }}
 
       - name: Run Email Processor
@@ -46,9 +46,9 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
         run: |
-          set +e  # Continue on error
+          set +e
           python send_scheduled_emails.py
           if [ $? -ne 0 ]; then
             echo "::warning::Email processing failed"
-            exit 0  # Prevent workflow failure for transient errors
+            exit 0
           fi
