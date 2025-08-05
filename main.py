@@ -1,5 +1,6 @@
 import os
 import asyncio
+import time
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -29,16 +30,22 @@ class LeadCreate(BaseModel):
     email: str
 
 # DB helper
-def get_db_connection(autocommit: bool = False):
-    # Force an SSL TCP connection
-    conn = psycopg2.connect(
-        dsn=DB_URL,
-        sslmode="require",
-        connect_timeout=10
-    )
-    if autocommit:
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-    return conn
+def get_db_connection(autocommit=False, max_retries=3, retry_delay=2):
+    for attempt in range(max_retries):
+        try:
+            conn = psycopg2.connect(
+                dsn=DB_URL,
+                sslmode="require",
+                connect_timeout=10
+            )
+            if autocommit:
+                conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            return conn
+        except psycopg2.OperationalError as e:
+            if attempt == max_retries - 1:
+                raise
+            print(f"Retrying DB connection (attempt {attempt + 1})...")
+            time.sleep(retry_delay)
 
 # Signup endpoint\@app.post('/signup')
 async def signup(lead: LeadCreate):
