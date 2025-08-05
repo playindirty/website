@@ -8,8 +8,19 @@ from psycopg2.extras import RealDictCursor
 from datetime import datetime
 
 # ── HARDCODED CONFIGURATION ──────────────────────────────────────────────
-# Replace these values with your actual credentials
-
+DB_CONFIG = {
+    "host": "db.ozbiubgszrvjdeogkvke.supabase.co",
+    "port": 5432,
+    "dbname": "postgres",
+    "user": "postgres",
+    "password": "Lornav22@",
+    "sslmode": "require",
+    "options": "-c address_family=ipv4",  # Force IPv4 connection
+    "connect_timeout": 10,
+    "keepalives": 1,
+    "keepalives_idle": 30,
+    "keepalives_interval": 10
+}
 
 SMTP_CONFIG = {
     "host": "smtp.gmail.com",
@@ -27,32 +38,23 @@ UNSUBSCRIBE_URL = "https://yourdomain.com/unsubscribe?id={lead_id}"
 
 # ── DB CONNECTION HELPER ─────────────────────────────────────────────────
 def get_db_connection():
-    DB_CONFIG = {
-        "host": "db.ozbiubgszrvjdeogkvke.supabase.co",
-        "port": 5432,
-        "dbname": "postgres",
-        "user": "postgres",
-        "password": "Lornav22@",
-        "sslmode": "require",
-        "options": "-c address_family=ipv4",
-        "connect_timeout": 10
-    }
-    
-    print("Attempting DB connection with config:", {**DB_CONFIG, "password": "***"})
-    
-    try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        print("✅ Database connection successful")
-        return conn
-    except Exception as e:
-        print(f"❌ Connection failed: {e}")
-        raise Exception(f"Database connection failed after {MAX_RETRIES} attempts: {str(e)}")
+    for attempt in range(MAX_RETRIES):
+        try:
+            print(f"Attempt {attempt + 1}/{MAX_RETRIES} to connect to database...")
+            conn = psycopg2.connect(**DB_CONFIG)
+            print("✅ Database connection successful")
+            return conn
+        except psycopg2.OperationalError as e:
+            print(f"❌ Connection attempt {attempt + 1} failed: {str(e)}")
+            if attempt == MAX_RETRIES - 1:
+                raise Exception(f"Database connection failed after {MAX_RETRIES} attempts")
             time.sleep(RETRY_DELAY * (attempt + 1))
 
 # ── SMTP HELPER ──────────────────────────────────────────────────────────
 def get_smtp_connection():
     for attempt in range(MAX_RETRIES):
         try:
+            print(f"Attempt {attempt + 1}/{MAX_RETRIES} to connect to SMTP...")
             server = smtplib.SMTP(
                 host=SMTP_CONFIG["host"],
                 port=SMTP_CONFIG["port"],
@@ -60,10 +62,12 @@ def get_smtp_connection():
             )
             server.starttls()
             server.login(SMTP_CONFIG["user"], SMTP_CONFIG["password"])
+            print("✅ SMTP connection successful")
             return server
         except Exception as e:
+            print(f"❌ SMTP connection attempt {attempt + 1} failed: {str(e)}")
             if attempt == MAX_RETRIES - 1:
-                raise Exception(f"SMTP connection failed after {MAX_RETRIES} attempts: {str(e)}")
+                raise Exception(f"SMTP connection failed after {MAX_RETRIES} attempts")
             time.sleep(RETRY_DELAY * (attempt + 1))
 
 # ── EMAIL TEMPLATES ──────────────────────────────────────────────────────
