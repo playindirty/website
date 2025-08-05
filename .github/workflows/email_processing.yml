@@ -2,7 +2,7 @@ name: Email Processing
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Every 5 minutes (adjust as needed)
+    - cron: '*/5 * * * *'  # Every 5 minutes
   workflow_dispatch:  # Manual trigger
   repository_dispatch:  # API trigger
 
@@ -29,12 +29,23 @@ jobs:
           pip install -r requirements.txt
           sudo apt-get install -y postgresql-client
 
-      - name: Verify DB Connection
+      - name: Extract DB host and verify connection
+        id: db-check
         run: |
-          echo "Testing connection to: $DB_HOST"
-          pg_isready -h "$DB_HOST" -p $PG_PORT -t 10
+          # Extract host from connection string
+          DB_URL="${{ secrets.SUPABASE_DB_URL }}"
+          DB_HOST=$(echo "$DB_URL" | awk -F'@' '{print $2}' | awk -F':' '{print $1}' | awk -F'/' '{print $1}')
+          echo "Extracted DB host: $DB_HOST"
+          
+          # Test connection
+          if pg_isready -h "$DB_HOST" -p $PG_PORT -t 10; then
+            echo "DB connection successful"
+            echo "DB_HOST=$DB_HOST" >> $GITHUB_ENV
+          else
+            echo "::error::Database connection failed"
+            exit 1
+          fi
         env:
-          DB_HOST: ${{ format('{0}', secrets.SUPABASE_DB_URL).split('@')[1].split(':')[0].split('/')[0] }}
           PG_PORT: ${{ env.PG_PORT }}
 
       - name: Run Email Processor
