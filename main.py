@@ -1,9 +1,8 @@
 import os
-import asyncio
+import threading
 import time
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from flask import Flask, request, jsonify
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
@@ -13,7 +12,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Config
+app = Flask(__name__)
+
+# Config (same as before)
 DB_URL = os.getenv('SUPABASE_DB_URL')
 SMTP_SERVER = os.getenv('SMTP_SERVER')
 SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
@@ -21,66 +22,62 @@ SMTP_USERNAME = os.getenv('SMTP_USERNAME')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 FROM_EMAIL = os.getenv('FROM_EMAIL', SMTP_USERNAME)
 
-app = FastAPI()
+# DB helper (same as before)
+def get_db_connection(autocommit=False):
+    conn = psycopg2.connect(
+        dsn=DB_URL,
+        sslmode="require",
+        connect_timeout=10
+    )
+    if autocommit:
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+    return conn
 
-# Pydantic models
-type LeadCreate = BaseModel
-class LeadCreate(BaseModel):
-    name: str
-    email: str
-
-# DB helper
-def get_db_connection(autocommit=False, max_retries=3, retry_delay=2):
-    for attempt in range(max_retries):
-        try:
-            conn = psycopg2.connect(
-                dsn=DB_URL,
-                sslmode="require",
-                connect_timeout=10
-            )
-            if autocommit:
-                conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            return conn
-        except psycopg2.OperationalError as e:
-            if attempt == max_retries - 1:
-                raise
-            print(f"Retrying DB connection (attempt {attempt + 1})...")
-            time.sleep(retry_delay)
-
-# Signup endpoint\@app.post('/signup')
-async def signup(lead: LeadCreate):
+# Routes
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute(
             'INSERT INTO public.leads (name, email) VALUES (%s, %s) RETURNING id',
-            (lead.name, lead.email)
+            (data['name'], data['email'])
         )
         lead_id = cur.fetchone()[0]
         conn.commit()
+        # Schedule welcome email
+        threading.Thread(target=schedule_welcome, args=(lead_id,)).start()
+        return jsonify({'id': lead_id})
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail='DB error')
+        return jsonify({'error': 'DB error'}), 500
     finally:
         cur.close()
         conn.close()
-    return { 'id': lead_id }
 
-# Unsubscribe endpoint\@app.get('/unsubscribe')
-async def unsubscribe(id: str):
+@app.route('/unsubscribe', methods=['GET'])
+def unsubscribe():
+    lead_id = request.args.get('id')
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(
-        'UPDATE public.leads SET unsubscribed = true WHERE id = %s',
-        (id,)
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-    return { 'status': 'unsubscribed' }
+    try:
+        cur.execute(
+            'UPDATE public.leads SET unsubscribed = true WHERE id = %s',
+            (lead_id,)
+        )
+        conn.commit()
+        return jsonify({'status': 'unsubscribed'})
+    finally:
+        cur.close()
+        conn.close()
 
-# Email sender
-def send_email(to_email: str, subject: str, html_content: str):
+@app.route('/')
+def root():
+    return jsonify({'status': 'ok', 'time': datetime.utcnow().isoformat()})
+
+# Email functions (same as before)
+def send_email(to_email, subject, html_content):
     msg = MIMEText(html_content, 'html')
     msg['Subject'] = subject
     msg['From'] = FROM_EMAIL
@@ -90,46 +87,46 @@ def send_email(to_email: str, subject: str, html_content: str):
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
         server.sendmail(FROM_EMAIL, to_email, msg.as_string())
 
-# Handle new leads
-def schedule_welcome(lead_id: str):
-    async def _task():
-        await asyncio.sleep(300)  # 5 minutes
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+def schedule_welcome(lead_id):
+    time.sleep(300)  # 5 minutes delay
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
         cur.execute(
             'SELECT name, email, unsubscribed FROM public.leads WHERE id = %s',
             (lead_id,)
         )
         row = cur.fetchone()
-        cur.close()
-        conn.close()
         if not row or row['unsubscribed']:
             return
         subject = 'Welcome!'
         html = f"""
             <p>Hi {row['name']},</p>
             <p>Thanks for joining us!</p>
-            <p><a href=\"/unsubscribe?id={lead_id}\">Unsubscribe</a></p>
+            <p><a href="/unsubscribe?id={lead_id}">Unsubscribe</a></p>
         """
         send_email(row['email'], subject, html)
-    asyncio.create_task(_task())
+    finally:
+        cur.close()
+        conn.close()
 
-# Listen for notifications
-async def listen_new_leads():
-    conn = get_db_connection(autocommit=True)
-    cur = conn.cursor()
-    cur.execute("LISTEN new_lead_channel;")
+# Database listener thread
+def listen_new_leads():
     while True:
-        conn.poll()
-        while conn.notifies:
-            notify = conn.notifies.pop(0)
-            schedule_welcome(notify.payload)
-        await asyncio.sleep(1)
+        try:
+            conn = get_db_connection(autocommit=True)
+            cur = conn.cursor()
+            cur.execute("LISTEN new_lead_channel;")
+            conn.poll()
+            while conn.notifies:
+                notify = conn.notifies.pop(0)
+                threading.Thread(target=schedule_welcome, args=(notify.payload,)).start()
+            time.sleep(1)
+        except Exception as e:
+            print(f"Database listener error: {e}")
+            time.sleep(5)
 
-@app.on_event('startup')
-async def startup():
-    asyncio.create_task(listen_new_leads())
-
-@app.get('/')
-async def root():
-    return { 'status': 'ok', 'time': datetime.utcnow().isoformat() }
+# Start background thread when app runs
+if __name__ == '__main__':
+    threading.Thread(target=listen_new_leads, daemon=True).start()
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
