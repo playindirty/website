@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import smtplib
 import json
 import time
@@ -7,138 +6,151 @@ from email.mime.text import MIMEText
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
-from urllib.parse import urlparse, parse_qs
 
-# ── CONFIG ────────────────────────────────────────────────────────────────
-MAX_DB_RETRIES = 3
+# ── HARDCODED CONFIGURATION ──────────────────────────────────────────────
+# Replace these values with your actual credentials
+DB_CONFIG = {
+    "host": "db.ozbiubgszrvjdeogkvke.supabase.co",
+    "port": 5432,
+    "dbname": "postgres",
+    "user": "postgres",
+    "password": "your_db_password_here",
+    "sslmode": "require",
+    "connect_timeout": 5,
+    "keepalives": 1,
+    "keepalives_idle": 30,
+    "keepalives_interval": 10
+}
+
+SMTP_CONFIG = {
+    "host": "your.smtp.server.com",
+    "port": 587,
+    "timeout": 10,
+    "user": "your_email@example.com",
+    "password": "your_smtp_password",
+    "from_email": "your_email@example.com"
+}
+
+# ── CONSTANTS ────────────────────────────────────────────────────────────
+MAX_RETRIES = 3
 RETRY_DELAY = 2
-SMTP_TIMEOUT = 10
+UNSUBSCRIBE_URL = "https://yourdomain.com/unsubscribe?id={lead_id}"
 
-DB_URL = os.getenv("SUPABASE_DB_URL")
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASS = os.getenv("SMTP_PASS")
-FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USER)
-
-# ── DB CONNECTION HELPER ──────────────────────────────────────────────────
+# ── DB CONNECTION HELPER ─────────────────────────────────────────────────
 def get_db_connection():
-    # Ensure SSL mode is set
-    parsed = urlparse(DB_URL)
-    query = parse_qs(parsed.query)
-    if 'sslmode' not in query:
-        DB_URL += "?sslmode=require" if '?' not in DB_URL else "&sslmode=require"
-    
-    for attempt in range(MAX_DB_RETRIES):
+    for attempt in range(MAX_RETRIES):
         try:
-            conn = psycopg2.connect(
-                dsn=DB_URL,
-                connect_timeout=5,
-                keepalives=1,
-                keepalives_idle=30,
-                keepalives_interval=10
-            )
-            return conn
+            return psycopg2.connect(**DB_CONFIG)
         except psycopg2.OperationalError as e:
-            if attempt == MAX_DB_RETRIES - 1:
-                raise
+            if attempt == MAX_RETRIES - 1:
+                raise Exception(f"Database connection failed after {MAX_RETRIES} attempts: {str(e)}")
             time.sleep(RETRY_DELAY * (attempt + 1))
-    raise Exception("Failed to connect to database after multiple attempts")
 
-# ── SMTP HELPER ───────────────────────────────────────────────────────────
+# ── SMTP HELPER ──────────────────────────────────────────────────────────
 def get_smtp_connection():
-    for attempt in range(MAX_DB_RETRIES):
+    for attempt in range(MAX_RETRIES):
         try:
-            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT)
+            server = smtplib.SMTP(
+                host=SMTP_CONFIG["host"],
+                port=SMTP_CONFIG["port"],
+                timeout=SMTP_CONFIG["timeout"]
+            )
             server.starttls()
-            server.login(SMTP_USER, SMTP_PASS)
+            server.login(SMTP_CONFIG["user"], SMTP_CONFIG["password"])
             return server
         except Exception as e:
-            if attempt == MAX_DB_RETRIES - 1:
-                raise
+            if attempt == MAX_RETRIES - 1:
+                raise Exception(f"SMTP connection failed after {MAX_RETRIES} attempts: {str(e)}")
             time.sleep(RETRY_DELAY * (attempt + 1))
 
-# ── MAIN EXECUTION ────────────────────────────────────────────────────────
+# ── EMAIL TEMPLATES ──────────────────────────────────────────────────────
+def generate_welcome_email(lead_name, lead_id):
+    return {
+        "subject": "Welcome to Our Service!",
+        "html": f"""
+        <p>Hi {lead_name},</p>
+        <p>Thanks for joining! We're excited to have you on board.</p>
+        <p>— The Team</p>
+        <p><a href="{UNSUBSCRIBE_URL.format(lead_id=lead_id)}">Unsubscribe</a></p>
+        """
+    }
+
+def generate_feature_email(lead_name, lead_id, features):
+    return {
+        "subject": "Check Out Our New Features!",
+        "html": f"""
+        <p>Hey {lead_name},</p>
+        <p>We just launched: {features}</p>
+        <p><a href="{UNSUBSCRIBE_URL.format(lead_id=lead_id)}">Unsubscribe</a></p>
+        """
+    }
+
+# ── MAIN EXECUTION ───────────────────────────────────────────────────────
 def main():
     print(f"[{datetime.utcnow().isoformat()}] Starting email processing")
     
+    conn = None
+    server = None
+    
     try:
-        # Database setup
+        # Initialize connections
         conn = get_db_connection()
+        server = get_smtp_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Fetch due emails
         cur.execute("""
-        SELECT se.id AS job_id,
-               se.type AS job_type,
-               se.payload AS job_payload,
-               l.id AS lead_id,
-               l.email AS lead_email,
-               l.name AS lead_name
+        SELECT se.id, se.type, se.payload, 
+               l.id as lead_id, l.email, l.name
         FROM public.scheduled_emails se
         JOIN public.leads l ON l.id = se.lead_id
         WHERE se.sent = false
           AND se.run_at <= NOW()
           AND l.unsubscribed = false
         ORDER BY se.run_at
-        LIMIT 100  # Prevent overload
+        LIMIT 100
         """)
         jobs = cur.fetchall()
 
         if not jobs:
             print(f"[{datetime.utcnow().isoformat()}] No emails to send.")
-            conn.close()
             return
 
-        # SMTP setup
-        server = get_smtp_connection()
         processed_count = 0
 
         for job in jobs:
             try:
-                # Email content generation
-                if job["job_type"] == "welcome":
-                    subject = "Welcome to Our Service!"
-                    html = f"""
-                    <p>Hi {job['lead_name']},</p>
-                    <p>Thanks for joining! We're excited to have you on board.</p>
-                    <p>— The Team</p>
-                    <p><a href="https://yourdomain.com/unsubscribe?id={job['lead_id']}">Unsubscribe</a></p>
-                    """
-                elif job["job_type"] == "feature_drop":
-                    features = json.loads(job["job_payload"]).get("features", "new features")
-                    subject = "Check Out Our New Features!"
-                    html = f"""
-                    <p>Hey {job['lead_name']},</p>
-                    <p>We just launched: {features}</p>
-                    <p><a href="https://yourdomain.com/unsubscribe?id={job['lead_id']}">Unsubscribe</a></p>
-                    """
+                # Generate email content
+                if job["type"] == "welcome":
+                    email_data = generate_welcome_email(job["name"], job["lead_id"])
+                elif job["type"] == "feature_drop":
+                    features = json.loads(job["payload"]).get("features", "new features")
+                    email_data = generate_feature_email(job["name"], job["lead_id"], features)
                 else:
-                    print(f"⚠️ Unknown job type: {job['job_type']}")
+                    print(f"⚠️ Unknown job type: {job['type']}")
                     continue
 
                 # Send email
-                msg = MIMEText(html, "html")
-                msg["Subject"] = subject
-                msg["From"] = FROM_EMAIL
-                msg["To"] = job["lead_email"]
-
-                server.sendmail(FROM_EMAIL, [job["lead_email"]], msg.as_string())
+                msg = MIMEText(email_data["html"], "html")
+                msg["Subject"] = email_data["subject"]
+                msg["From"] = SMTP_CONFIG["from_email"]
+                msg["To"] = job["email"]
+                server.sendmail(SMTP_CONFIG["from_email"], [job["email"]], msg.as_string())
                 
                 # Mark as sent
                 cur.execute("""
                 UPDATE public.scheduled_emails
                 SET sent = true, sent_at = NOW()
                 WHERE id = %s
-                """, (job["job_id"],))
+                """, (job["id"],))
                 conn.commit()
                 
                 processed_count += 1
-                print(f"✅ Sent {job['job_type']} to {job['lead_email']}")
+                print(f"✅ Sent {job['type']} to {job['email']}")
 
             except Exception as e:
                 conn.rollback()
-                print(f"❌ Failed to process job {job['job_id']}: {str(e)}")
+                print(f"❌ Failed to process job {job.get('id')}: {str(e)}")
                 continue
 
         print(f"Processed {processed_count}/{len(jobs)} emails successfully")
@@ -147,14 +159,18 @@ def main():
         print(f"🛑 Critical error: {str(e)}")
         raise
     finally:
-        try:
-            server.quit()
-        except:
-            pass
-        try:
-            conn.close()
-        except:
-            pass
+        # Clean up resources
+        if server:
+            try:
+                server.quit()
+            except Exception as e:
+                print(f"⚠️ Error closing SMTP connection: {str(e)}")
+        
+        if conn:
+            try:
+                conn.close()
+            except Exception as e:
+                print(f"⚠️ Error closing database connection: {str(e)}")
 
 if __name__ == "__main__":
     main()
