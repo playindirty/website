@@ -9,18 +9,7 @@ from datetime import datetime
 
 # ── HARDCODED CONFIGURATION ──────────────────────────────────────────────
 # Replace these values with your actual credentials
-DB_CONFIG = {
-    "host": "db.ozbiubgszrvjdeogkvke.supabase.co",
-    "port": 5432,
-    "dbname": "postgres",
-    "user": "postgres",
-    "password": "Lornav22@",
-    "sslmode": "require",
-    "connect_timeout": 5,
-    "keepalives": 1,
-    "keepalives_idle": 30,
-    "keepalives_interval": 10
-}
+
 
 SMTP_CONFIG = {
     "host": "smtp.gmail.com",
@@ -38,12 +27,26 @@ UNSUBSCRIBE_URL = "https://yourdomain.com/unsubscribe?id={lead_id}"
 
 # ── DB CONNECTION HELPER ─────────────────────────────────────────────────
 def get_db_connection():
-    for attempt in range(MAX_RETRIES):
-        try:
-            return psycopg2.connect(**DB_CONFIG)
-        except psycopg2.OperationalError as e:
-            if attempt == MAX_RETRIES - 1:
-                raise Exception(f"Database connection failed after {MAX_RETRIES} attempts: {str(e)}")
+    DB_CONFIG = {
+        "host": "db.ozbiubgszrvjdeogkvke.supabase.co",
+        "port": 5432,
+        "dbname": "postgres",
+        "user": "postgres",
+        "password": "Lornav22@",
+        "sslmode": "require",
+        "options": "-c address_family=ipv4",
+        "connect_timeout": 10
+    }
+    
+    print("Attempting DB connection with config:", {**DB_CONFIG, "password": "***"})
+    
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        print("✅ Database connection successful")
+        return conn
+    except Exception as e:
+        print(f"❌ Connection failed: {e}")
+        raise Exception(f"Database connection failed after {MAX_RETRIES} attempts: {str(e)}")
             time.sleep(RETRY_DELAY * (attempt + 1))
 
 # ── SMTP HELPER ──────────────────────────────────────────────────────────
