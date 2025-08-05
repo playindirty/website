@@ -677,13 +677,12 @@
   // 2) Initialize Supabase
   const SUPABASE_URL   = 'https://ozbiubgszrvjdeogkvke.supabase.co';       // ← your Supabase URL
   const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';        // ← your anon key
-  const supabase      = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  // 3) Single form handler
+  // 3) Single form handler using `sb`
   document.getElementById('leadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Collect + validate
     const name  = e.target.querySelector('input[type="text"]').value.trim();
     const email = e.target.querySelector('input[type="email"]').value.trim();
     if (!name || !email) {
@@ -691,7 +690,7 @@
     }
 
     // 4) Insert into 'leads'
-    const { error: insertErr } = await supabase
+    const { error: insertErr } = await sb
       .from('leads')
       .insert({ name, email });
     if (insertErr) {
@@ -699,14 +698,14 @@
       return alert('Couldn’t save your info—please try again.');
     }
 
-    // 5) Generate signed URL for your PDF (expires in 1 hour)
-    const { data: urlData, error: urlErr } = await supabase
+    // 5) Generate signed URL for the PDF (expires in 1 hour)
+    const { data: urlData, error: urlErr } = await sb
       .storage
       .from('documents')
       .createSignedUrl('playbook-2025.pdf', 3600);
     if (urlErr || !urlData?.signedUrl) {
       console.error('Signed URL error:', urlErr);
-      return alert('Saved, but couldn’t generate your download link.');
+      return alert('Saved, but couldn’t generate download link.');
     }
 
     // 6) Redirect user to download the PDF
