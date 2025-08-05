@@ -670,45 +670,49 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.30.0/dist/umd/index.min.js"></script>
+        <!-- 1) Load the Supabase UMD client so it creates window.supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/index.min.js"></script>
 
-    
-<script>
-  // 2) Initialize Supabase
-  const SUPABASE_URL   = 'https://ozbiubgszrvjdeogkvke.supabase.co';       // ← your Supabase URL
-  const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';        // ← your anon key
-  // Initialize under “sb” so we never shadow the global
-      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-      // Single form handler
-      document.getElementById('leadForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name  = e.target.querySelector('input[type="text"]').value.trim();
-        const email = e.target.querySelector('input[type="email"]').value.trim();
-        if (!name || !email) {
-          return alert('Please enter both your name and email.');
-        }
+  <script>
+    // 2) Your Supabase creds
+    const SUPABASE_URL  = 'https://ozbiubgszrvjdeogkvke.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY'; // ← your anon key
 
-        // 1) Insert into `leads`
-        const { error: insertErr } = await sb.from('leads').insert({ name, email });
-        if (insertErr) {
-          console.error('Insert error:', insertErr);
-          return alert('Couldn’t save your info—please try again.');
-        }
+    // 3) Now that window.supabase is defined, create your client
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-        // 2) Create a signed URL (expires in 1h)
-        const { data: urlData, error: urlErr } = await sb
-          .storage
-          .from('documents')
-          .createSignedUrl('playbook-2025.pdf', 3600);
-        if (urlErr || !urlData?.signedUrl) {
-          console.error('Signed URL error:', urlErr);
-          return alert('Saved, but couldn’t generate download link.');
-        }
+    // 4) One form handler to save the lead and download the PDF
+    document.getElementById('leadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-        // 3) Redirect to trigger download
-        window.location.href = urlData.signedUrl;
-      });
-    </script>
+      const name  = e.target.querySelector('input[type="text"]').value.trim();
+      const email = e.target.querySelector('input[type="email"]').value.trim();
+      if (!name || !email) {
+        return alert('Please enter both your name and email.');
+      }
+
+      // Insert the lead
+      const { error: insertErr } = await sb.from('leads').insert({ name, email });
+      if (insertErr) {
+        console.error('Insert error:', insertErr);
+        return alert('Couldn’t save your info—please try again.');
+      }
+
+      // Create a signed URL for playbook-2025.pdf (1h expiry)
+      const { data: urlData, error: urlErr } = await sb
+        .storage
+        .from('documents')
+        .createSignedUrl('playbook-2025.pdf', 3600);
+      if (urlErr || !urlData?.signedUrl) {
+        console.error('Signed URL error:', urlErr);
+        return alert('Saved, but couldn’t generate download link.');
+      }
+
+      // Redirect to download
+      window.location.href = urlData.signedUrl;
+    });
+  </script>
+
 </body>
 </html>
