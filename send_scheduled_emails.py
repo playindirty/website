@@ -1,26 +1,22 @@
 #!/usr/bin/env python3
+#!/usr/bin/env python3
 import smtplib
 import json
 import time
+import socket
 from email.mime.text import MIMEText
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
 
-# ── HARDCODED CONFIGURATION ──────────────────────────────────────────────
-DB_CONFIG = {
-    "host": "db.ozbiubgszrvjdeogkvke.supabase.co",
-    "port": 5432,
-    "dbname": "postgres",
-    "user": "postgres",
-    "password": "Lornav22@",
-    "sslmode": "require",
-    "options": "-c address_family=ipv4",  # Force IPv4 connection
-    "connect_timeout": 10,
-    "keepalives": 1,
-    "keepalives_idle": 30,
-    "keepalives_interval": 10
-}
+# ── CONFIGURATION ────────────────────────────────────────────────────────
+# Use connection string format that forces IPv4
+DB_CONN_STR = (
+    "postgresql://postgres:Lornav22@"
+    "db.ozbiubgszrvjdeogkvke.supabase.co:5432/postgres"
+    "?sslmode=require"
+    "&options=-c%20address_family%3Dipv4"  # Force IPv4
+)
 
 SMTP_CONFIG = {
     "host": "smtp.gmail.com",
@@ -41,34 +37,43 @@ def get_db_connection():
     for attempt in range(MAX_RETRIES):
         try:
             print(f"Attempt {attempt + 1}/{MAX_RETRIES} to connect to database...")
-            conn = psycopg2.connect(**DB_CONFIG)
+            
+            # Force IPv4 DNS resolution
+            host = "db.ozbiubgszrvjdeogkvke.supabase.co"
+            ipv4 = socket.getaddrinfo(host, 5432, family=socket.AF_INET)[0][4][0]
+            print(f"Resolved {host} to IPv4: {ipv4}")
+            
+            # Connect using direct IPv4 address
+            conn = psycopg2.connect(
+                host=ipv4,
+                port=5432,
+                dbname="postgres",
+                user="postgres",
+                password="Lornav22@",
+                sslmode="require",
+                connect_timeout=10
+            )
+            
             print("✅ Database connection successful")
             return conn
+            
+        except socket.gaierror:
+            print("⚠️ DNS resolution failed, trying connection string method...")
+            try:
+                conn = psycopg2.connect(DB_CONN_STR)
+                print("✅ Database connection successful (fallback method)")
+                return conn
+            except psycopg2.OperationalError as e:
+                print(f"❌ Fallback connection failed: {str(e)}")
+                raise
+            
         except psycopg2.OperationalError as e:
             print(f"❌ Connection attempt {attempt + 1} failed: {str(e)}")
             if attempt == MAX_RETRIES - 1:
                 raise Exception(f"Database connection failed after {MAX_RETRIES} attempts")
             time.sleep(RETRY_DELAY * (attempt + 1))
 
-# ── SMTP HELPER ──────────────────────────────────────────────────────────
-def get_smtp_connection():
-    for attempt in range(MAX_RETRIES):
-        try:
-            print(f"Attempt {attempt + 1}/{MAX_RETRIES} to connect to SMTP...")
-            server = smtplib.SMTP(
-                host=SMTP_CONFIG["host"],
-                port=SMTP_CONFIG["port"],
-                timeout=SMTP_CONFIG["timeout"]
-            )
-            server.starttls()
-            server.login(SMTP_CONFIG["user"], SMTP_CONFIG["password"])
-            print("✅ SMTP connection successful")
-            return server
-        except Exception as e:
-            print(f"❌ SMTP connection attempt {attempt + 1} failed: {str(e)}")
-            if attempt == MAX_RETRIES - 1:
-                raise Exception(f"SMTP connection failed after {MAX_RETRIES} attempts")
-            time.sleep(RETRY_DELAY * (attempt + 1))
+# [Rest of your code remains the same...]
 
 # ── EMAIL TEMPLATES ──────────────────────────────────────────────────────
 def generate_welcome_email(lead_name, lead_id):
