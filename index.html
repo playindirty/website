@@ -677,41 +677,41 @@
   // 2) Initialize Supabase
   const SUPABASE_URL   = 'https://ozbiubgszrvjdeogkvke.supabase.co';       // ← your Supabase URL
   const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';        // ← your anon key
-  // 3) Destructure the factory & create a client instance
-  const { createClient } = supabase;
-  const supabaseClient  = createClient(SUPABASE_URL, SUPABASE_ANON);
+  // 3) Instantiate your client
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  // 4) Single form handler
-  document.getElementById('leadForm').addEventListener('submit', async (e) => {
+  // 4) Attach one form handler
+  const form = document.getElementById('leadForm');
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const name  = e.target.querySelector('input[type="text"]').value.trim();
-    const email = e.target.querySelector('input[type="email"]').value.trim();
+    // Grab + trim inputs
+    const name  = form.querySelector('input[type="text"]').value.trim();
+    const email = form.querySelector('input[type="email"]').value.trim();
     if (!name || !email) {
       return alert('Please enter both your name and email.');
     }
 
-    console.log('Saving lead:', { name, email });
-    const { error: insertErr } = await supabaseClient
+    // 5) Insert into `leads`
+    const { error: insertErr } = await supabase
       .from('leads')
       .insert({ name, email });
-
     if (insertErr) {
       console.error('Insert error:', insertErr);
-      return alert('Oops! We couldn’t save your info—please try again.');
+      return alert('Couldn’t save your info—please try again.');
     }
 
-    const { data: urlData, error: urlErr } = await supabaseClient
+    // 6) Create signed URL for the PDF (1 hour expiry)
+    const { data: urlData, error: urlErr } = await supabase
       .storage
       .from('documents')
       .createSignedUrl('playbook-2025.pdf', 3600);
-
     if (urlErr || !urlData?.signedUrl) {
       console.error('Signed URL error:', urlErr);
-      return alert('Saved, but couldn’t generate your download link.');
+      return alert('Saved, but couldn’t generate download link.');
     }
 
-    // Trigger the download
+    // 7) Redirect to download
     window.location.href = urlData.signedUrl;
   });
 </script>
