@@ -679,13 +679,10 @@
   <script>
     document.addEventListener('DOMContentLoaded', async function() {
         console.log('DOM fully loaded');
-        
         if (typeof supabase === 'undefined') {
             console.error('Supabase not loaded!');
             return;
         }
-        
-        console.log('Supabase loaded successfully:', supabase);
 
         const SUPABASE_URL = 'https://ozbiubgszrvjdeogkvke.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Yml1YmdzenJ2amRlb2drdmtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODczNDAsImV4cCI6MjA2OTk2MzM0MH0.Qjxsfaoj0bMSsscOUFEn7vbzxke4jr9MVVNrVMwjLKY';
@@ -694,46 +691,28 @@
         console.log('Supabase client created:', sb);
 
         const leadForm = document.getElementById('leadForm');
-        if (leadForm) {
-            leadForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
+        if (!leadForm) {
+            console.error('Lead form not found!');
+            return;
+        }
 
-                const name = e.target.querySelector('input[type="text"]').value.trim();
-                const email = e.target.querySelector('input[type="email"]').value.trim();
-                
-                if (!name || !email) {
-                    alert('Please enter both your name and email.');
-                    return;
-                }
+        leadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = e.target.querySelector('input[type="text"]').value.trim();
+            const email = e.target.querySelector('input[type="email"]').value.trim();
+            if (!name || !email) {
+                alert('Please enter both your name and email.');
+                return;
+            }
 
-                try {
-                    console.log('Submitting lead:', { name, email });
-                    
-                    // Insert lead
-                    const { error: insertError } = await sb
-                        .from('leads')
-                        .insert({ name, email });
-                    
-                    if (insertError) throw insertError;
+            try {
+                // Insert lead
+                const { error: insertError } = await sb
+                    .from('leads')
+                    .insert({ name, email });
+                if (insertError) throw insertError;
 
-                    console.log('Lead inserted successfully');
-                    
-                    // First check if file exists
-                    const { data: fileList, error: listError } = await sb
-                        .storage
-                        .from('documents')
-                        .list();
-                    
-                    if (listError) throw listError;
-                    console.log('Files in documents bucket:', fileList);
-
-                    // Check if our file exists
-                    const fileExists = fileList.some(file => file.name === 'playbook-2025.pdf');
-                    if (!fileExists) {
-                        throw new Error('File playbook-2025.pdf not found in documents bucket');
-                    }
-
-                    // Download PDF as Blob
+                // Download PDF as Blob
                 const { data: fileBlob, error: downloadError } = await sb
                     .storage
                     .from('documents')
@@ -752,12 +731,12 @@
 
                 alert('Thank you! Your download should begin shortly.');
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error during form submission:', error);
                 alert(`Error: ${error.message}. Please contact support.`);
             }
         });
     });
-</script>
+    </script>
 
 </body>
 </html>
