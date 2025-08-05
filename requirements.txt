@@ -1,4 +1,3 @@
-fastapi
-uvicorn[standard]
+flask
 psycopg2-binary
 python-dotenv
