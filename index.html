@@ -521,165 +521,150 @@
     </style>
 </head>
 <body>
-    <div class="progress-bar" id="progressBar"></div>
+  <header role="banner">
+    <div>
+      <h1>ReplyzeAI</h1>
+      <p>Turn Cold Real Estate Leads Into Commission Checks — Without Chasing Anyone</p>
+    </div>
 
-    <nav class="nav">
-        <div class="logo">ReplyzeAI</div>
-        <div class="nav-links">
-            <a href="https://replyzeai.vercel.app/features">Features</a>
-            <a href="client_consultation.html">Resources</a>
-            <a href="#">Testimonials</a>
-        </div>
-        <a href="https://replyzeai.vercel.app" class="cta-button">about us</a>
+    <nav aria-label="Primary">
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#playbook">Free Playbook</a></li>
+        <li><a href="#testimonials">Testimonials</a></li>
+      </ul>
     </nav>
+  </header>
 
-    <section class="hero">
-        <h1>Generate More Real Estate Leads<br><span class="highlight">Without the Manual Work</span></h1>
-        <p>AI-powered lead generation for busy solo agents. Automate your outreach and focus on closing deals.</p>
-        
-        <div class="lead-magnet">
-            <h2 class="lead-title">Get Our Exclusive Lead Magnet</h2>
-            <p class="lead-description">Download our FREE "2025 Real Estate Lead Generation Playbook" packed with proven strategies to attract high-quality leads and boost your conversion rate.</p>
-            
-            <div class="lead-benefits">
-                <div class="benefit">
-                    <i class="fas fa-check-circle"></i>
-                    <span>7 Proven Lead Sources</span>
-                </div>
-                <div class="benefit">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Email Template Library</span>
-                </div>
-                <div class="benefit">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Conversion Rate Tips</span>
-                </div>
-            </div>
-            
-            <form class="email-form" id="leadForm">
-                <div class="form-group">
-                    <input type="text" class="form-input" placeholder="Your Name" required>
-                </div>
-                <div class="form-group">
-                    <input type="email" class="form-input" placeholder="Your Email" required>
-                </div>
-                <button type="submit" class="submit-btn">Get Instant Access →</button>
-                <p class="privacy">We respect your privacy. Unsubscribe at any time. <a href="#">Privacy Policy</a></p>
-            </form>
-        </div>
+  <main role="main">
+    <!-- Hero -->
+    <section id="hero" aria-labelledby="hero-heading">
+      <h2 id="hero-heading">Stop Chasing. Start Closing.</h2>
+      <p>
+        If you’re a solo real estate agent, you don’t have time for endless follow-ups, manual outreach, or bad leads.
+        ReplyzeAI automates lead generation, filters the time-wasters, and nurtures prospects until they’re ready to close —
+        so you can focus on selling, not chasing.
+      </p>
+
+      <p><strong>Free Playbook:</strong> <a href="#playbook">Download the 2025 Real Estate Lead Generation Playbook</a></p>
+      <p>
+        <a href="#cta-start">Start for Free Today →</a>
+      </p>
     </section>
 
-    <section class="features">
-        <h2 class="section-title">How ReplyzeAI Transforms Your Business</h2>
-        <p class="section-subtitle">AI-powered tools designed specifically for real estate solo professionals to save time and increase conversions</p>
-        
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <h3>AI Lead Qualification</h3>
-                <p>Our AI analyzes lead behavior to prioritize hot prospects, saving you hours of manual screening.</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-mail-bulk"></i>
-                </div>
-                <h3>Automated Follow-ups</h3>
-                <p>Never miss an opportunity with personalized, automated follow-up sequences that convert.</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <h3>Performance Analytics</h3>
-                <p>Track campaign performance and optimize your strategy with real-time insights.</p>
-            </div>
+    <!-- Lead magnet -->
+    <section id="playbook" aria-labelledby="playbook-heading">
+      <h3 id="playbook-heading">FREE — 2025 Real Estate Lead Generation Playbook</h3>
+      <p>Get the exact playbook busy agents use to book more showings and close more deals fast.</p>
+
+      <ul>
+        <li><strong>7 Proven Sources</strong> to fill your pipeline with high-quality leads</li>
+        <li><strong>Plug-and-Play Email Templates</strong> that get replies fast</li>
+        <li><strong>Conversion Boosters</strong> that turn "maybe later" into "let's do it"</li>
+      </ul>
+
+      <form action="/subscribe" method="post" aria-labelledby="playbook-heading">
+        <div>
+          <label for="name">Your name</label><br />
+          <input id="name" name="name" type="text" required />
         </div>
+
+        <div>
+          <label for="email">Email address</label><br />
+          <input id="email" name="email" type="email" required />
+        </div>
+
+        <div>
+          <button type="submit">Get My Free Playbook →</button>
+        </div>
+
+        <p>
+          We respect your privacy. Unsubscribe anytime. <a href="/privacy">Privacy Policy</a>
+        </p>
+      </form>
     </section>
 
-    <section class="testimonials">
-        <h2 class="section-title">Trusted by Top solo Agents</h2>
-        <p class="section-subtitle">Hear from real estate professionals who have transformed their business with ReplyzeAI</p>
-        
-        <div class="testimonials-grid">
-            <div class="testimonial-card">
-                <p class="testimonial-text">ReplyzeAI helped me triple my lead conversion rate in just 3 months. The automated follow-up system is a game-changer for busy agents.</p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">JS</div>
-                    <div class="author-info">
-                        <h4>Jessica Simmons</h4>
-                        <p>Top Producer, Keller Williams</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="testimonial-card">
-                <p class="testimonial-text">I was skeptical about AI tools, but ReplyzeAI understands real estate. It feels like having a full-time assistant at a fraction of the cost.</p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">MR</div>
-                    <div class="author-info">
-                        <h4>Michael Rodriguez</h4>
-                        <p>Broker, Coldwell Banker</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="testimonial-card">
-                <p class="testimonial-text">The lead magnet was just the beginning. The actual platform has helped me systematize my lead generation in ways I never thought possible.</p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">TL</div>
-                    <div class="author-info">
-                        <h4>Taylor Johnson</h4>
-                        <p>Independent Realtor</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Value proposition / features -->
+    <section id="features" aria-labelledby="features-heading">
+      <h3 id="features-heading">Why Top Agents Choose ReplyzeAI</h3>
+
+      <article>
+        <h4>AI Lead Qualification</h4>
+        <p>
+          Stop wasting time on bad leads. Our AI ranks and scores prospects so you talk only to the hottest opportunities.
+        </p>
+      </article>
+
+      <article>
+        <h4>Automated Follow-Ups</h4>
+        <p>
+          Close the gap between "interested" and "signed." ReplyzeAI sends smart, personalized messages that keep you top of mind.
+        </p>
+      </article>
+
+      <article>
+        <h4>Real-Time Performance Tracking</h4>
+        <p>
+          Know exactly what's working so you can double down on winners and ditch the losers.
+        </p>
+      </article>
+
+      <p><a href="#cta-start">Stop losing deals. Start closing.</a></p>
     </section>
 
-    <footer class="footer">
-        <div class="footer-grid">
-            <div class="footer-column">
-                <div class="logo">ReplyzeAI</div>
-                <p style="color: var(--light-blue); margin-top: 1rem;">AI-powered lead generation for real estate solo professionals.</p>
-            </div>
-            
-            <div class="footer-column">
-                <h4>Resources</h4>
-                <ul class="footer-links">
-                    <li><a href="https://replyzeai.vercel.app">Blog</a></li>
-                    <li><a href="https://replyzeai.vercel.app">Case Studies</a></li>
-                    <li><a href="https://replyzeai.vercel.app">Webinars</a></li>
-                    <li><a href="https://replyzeai.vercel.app">Help Center</a></li>
-                </ul>
-            </div>
-            
-            <div class="footer-column">
-                <h4>Company</h4>
-                <ul class="footer-links">
-                    <li><a href="https://replyzeai.vercel.app">About Us</a></li>
-                    <li><a href="https://replyzeai.vercel.app/temporary2">Contact</a></li>
-                </ul>
-            </div>
-            
-            <div class="footer-column">
-                <h4>Legal</h4>
-                <ul class="footer-links">
-                    <li><a href="https://replyzeai.vercel.app">Privacy Policy</a></li>
-                    <li><a href="https://replyzeai.vercel.app/">Terms of Service</a></li>
-                    <li><a href="https://replyzeai.vercel.app/">Cookie Policy</a></li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="footer-bottom">
-            <p>© 2025 ReplyzeAI. All rights reserved. Designed for real estate solo professionals.</p>
-        </div>
-    </footer>
+    <!-- Social proof -->
+    <section id="testimonials" aria-labelledby="testimonials-heading">
+      <h3 id="testimonials-heading">Real Results From Agents</h3>
 
+      <blockquote>
+        <p>
+          "ReplyzeAI helped me triple my conversion rate in 90 days. It’s like having a 24/7 assistant who never forgets a follow-up."
+        </p>
+        <footer>— Jessica Simmons, Top Producer, Keller Williams</footer>
+      </blockquote>
+
+      <blockquote>
+        <p>
+          "Skeptical at first… but now? I can’t imagine running my business without it."
+        </p>
+        <footer>— Michael Rodriguez, Broker, Coldwell Banker</footer>
+      </blockquote>
+
+      <blockquote>
+        <p>
+          "The lead magnet was just the beginning. The platform systematized my lead gen in ways I never thought possible."
+        </p>
+        <footer>— Taylor Johnson, Independent Realtor</footer>
+      </blockquote>
+    </section>
+
+    <!-- CTA -->
+    <section id="cta" aria-labelledby="cta-heading">
+      <h3 id="cta-heading">Ready to Fill Your Calendar With Warm Leads?</h3>
+      <p>Stop losing deals because you didn’t follow up fast enough. Join agents who close more while working less.</p>
+
+      <p>
+        <a id="cta-start" href="/signup">Start for Free Today →</a>
+      </p>
+
+      <p>If you'd like a tailored walkthrough, email <a href="mailto:hello@replyzeai.example">hello@replyzeai.example</a></p>
+    </section>
+  </main>
+
+  <footer role="contentinfo">
+    <div>
+      <strong>ReplyzeAI</strong>
+      <p>Built for real estate agents who want to close more deals, work fewer hours, and grow without burning out.</p>
+      <p>© 2025 ReplyzeAI. All rights reserved.</p>
+    </div>
+
+    <nav aria-label="Footer">
+      <ul>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms of Service</a></li>
+      </ul>
+    </nav>
+  </footer>
         <!-- 1) Load the Supabase UMD client so it creates window.supabase -->
   
 
