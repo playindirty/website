@@ -1,5 +1,6 @@
-flask
-gunicorn
-uvicorn[standard]
-psycopg2-binary
-python-dotenv
+Flask==2.3.2
+requests==2.31.0
+python-dotenv==1.0.0
+cryptography==41.0.0
+supabase==0.2.9
+email-validator==1.3.1
