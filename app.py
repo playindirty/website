@@ -126,20 +126,49 @@ def auth_google_callback():
     return f"Connected {email}. You can close this window."
 
 # Public subscribe API
+# Replace your current api_subscribe with this
+import traceback
+from flask import current_app
+
 @app.route('/api/subscribe', methods=['POST'])
 def api_subscribe():
-    body = request.get_json(force=True)
-    email = (body.get('email') or "").strip().lower()
-    name = body.get('name', None)
     try:
-        validate_email(email)
-    except EmailNotValidError as e:
-        return jsonify({"error": "invalid email"}), 400
+        body = request.get_json(force=True)
+        email = (body.get('email') or "").strip().lower()
+        name = body.get('name', None)
 
-    res = supabase.table("subscribers").upsert({"email": email, "name": name}, on_conflict=["email"]).execute()
-    if res.status_code >= 400:
-        return jsonify({"error": res.text}), 500
-    return jsonify({"ok": True, "subscriber": res.data[0]})
+        # validate email
+        try:
+            validate_email(email)
+        except EmailNotValidError as e:
+            return jsonify({"error": "invalid_email", "detail": str(e)}), 400
+
+        # call supabase upsert
+        res = supabase.table("subscribers").upsert({"email": email, "name": name}, on_conflict=["email"]).execute()
+
+        # supabase-py returns an object with .data and .error (but may not have .status_code)
+        api_error = getattr(res, "error", None)
+        data = getattr(res, "data", None)
+
+        if api_error:
+            # Log for server-side debugging
+            print("Supabase error:", api_error)
+            return jsonify({"error": "db_error", "detail": str(api_error)}), 500
+
+        # success - res.data may be a list or a single object
+        subscriber = None
+        if isinstance(data, list) and len(data) > 0:
+            subscriber = data[0]
+        else:
+            subscriber = data
+
+        return jsonify({"ok": True, "subscriber": subscriber}), 200
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        print("=== /api/subscribe exception ===")
+        print(tb)
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 # Unsubscribe link endpoint
 @app.route('/unsubscribe')
