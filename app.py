@@ -223,8 +223,10 @@ def api_queue_newsletter():
 
     # insert newsletter
     res = supabase.table("newsletters").insert({"title": title, "subject": subject, "body": html, "status": "queued"}).execute()
-    if res.status_code >= 400:
-        return jsonify({"error": res.text}), 500
+    if res.error:  # ✅ Correct way to check for errors
+    return jsonify({"error": str(res.error)}), 500
+
+return jsonify({"success": True, "data": res.data})
     newsletter = res.data[0]
 
     # fetch active subscribers
