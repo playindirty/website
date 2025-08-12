@@ -1,0 +1,51 @@
+<!-- templates/admin.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Admin — Newsletter</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{font-family:Inter,system-ui,Segoe UI,Arial;padding:30px;background:#f3f4f6}
+    .wrap{max-width:900px;margin:0 auto}
+    .card{background:white;padding:18px;border-radius:8px;box-shadow:0 6px 18px rgba(15,23,42,.06);margin-bottom:16px}
+    input,textarea,button{width:100%;padding:10px;margin-top:8px;border:1px solid #e5e7eb;border-radius:6px}
+    button{background:#1f2937;color:white;border:0;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h3>Connect Gmail account</h3>
+      <p>Click to add a sending Gmail account (admin only).</p>
+      <a href="{{connect_url}}"><button>Connect Gmail</button></a>
+    </div>
+
+    <div class="card">
+      <h3>Create & Queue Newsletter</h3>
+      <input id="title" placeholder="Internal title (optional)"/>
+      <input id="subject" placeholder="Email subject" />
+      <textarea id="body" placeholder="HTML body" rows="8"></textarea>
+      <button id="queue">Queue newsletter</button>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('queue').addEventListener('click', async ()=>{
+      const title = document.getElementById('title').value;
+      const subject = document.getElementById('subject').value;
+      const body = document.getElementById('body').value;
+      document.getElementById('status').innerText = 'Queuing...';
+      const res = await fetch('/api/newsletter/queue', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({title, subject, body})
+      });
+      const json = await res.json();
+      if(res.ok) document.getElementById('status').innerText = `Queued ${json.queued} recipients.`;
+      else document.getElementById('status').innerText = JSON.stringify(json);
+    });
+  </script>
+</body>
+</html>
