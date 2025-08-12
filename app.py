@@ -74,55 +74,86 @@ def auth_google_connect():
 # OAuth callback: exchange code -> tokens -> store encrypted refresh_token
 @app.route('/auth/google/callback')
 def auth_google_callback():
-    code = request.args.get('code')
-    if not code:
-        return "Missing code", 400
+    try:
+        code = request.args.get('code')
+        if not code:
+            return "Missing code", 400
 
-    token_url = "https://oauth2.googleapis.com/token"
-    data = {
-        "code": code,
-        "client_id": GOOGLE_CLIENT_ID,
-        "client_secret": GOOGLE_CLIENT_SECRET,
-        "redirect_uri": OAUTH_REDIRECT_URI,
-        "grant_type": "authorization_code"
-    }
-    r = requests.post(token_url, data=data)
-    if r.status_code != 200:
-        return f"token exchange error: {r.text}", 500
-    tokens = r.json()
-    refresh_token = tokens.get('refresh_token')
-    if not refresh_token:
-        # possible if user already granted consent earlier; instruct admin to re-consent with different account
-        # but still try to get userinfo using access_token
-        access_token = tokens.get('access_token')
-    else:
+        # Exchange code for tokens
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": OAUTH_REDIRECT_URI,
+            "grant_type": "authorization_code"
+        }
+        r = requests.post(token_url, data=data)
+        if r.status_code != 200:
+            app.logger.error("Token exchange failed: %s", r.text)
+            return f"token exchange error: {r.text}", 500
+        tokens = r.json()
+        refresh_token = tokens.get('refresh_token')
         access_token = tokens.get('access_token')
 
-    # Get user email from tokeninfo endpoint or people endpoint
-    whoami = requests.get("https://www.googleapis.com/oauth2/v2/userinfo", headers={"Authorization": f"Bearer {access_token}"})
-    if whoami.status_code != 200:
-        return "failed to fetch userinfo", 500
-    profile = whoami.json()
-    email = profile.get('email')
-    display_name = profile.get('name') or email
+        # If no refresh token, warn (common when account already granted consent)
+        if not refresh_token:
+            app.logger.warning("No refresh token returned in token exchange. Ensure prompt=consent and a fresh account.")
+            # still attempt to proceed using access_token for userinfo (but can't store refresh token)
+        
+        # Get user info
+        whoami = requests.get("https://www.googleapis.com/oauth2/v2/userinfo",
+                              headers={"Authorization": f"Bearer {access_token}"})
+        if whoami.status_code != 200:
+            app.logger.error("Failed to fetch userinfo: %s", whoami.text)
+            return "failed to fetch userinfo", 500
+        profile = whoami.json()
+        email = profile.get('email')
+        display_name = profile.get('name') or email
 
-    # If we don't have a refresh token, warn client (first-time consent is needed)
-    if not refresh_token:
-        return ("No refresh token returned. Make sure you used prompt=consent and this account hasn't already granted a token.\n"
-                "Try connecting again and ensure you approve the consent screens."), 400
+        # Ensure we actually have a refresh token before attempting to store it
+        if not refresh_token:
+            return ("No refresh token returned. Make sure to use prompt=consent and connect an account that hasn't already granted consent. "
+                    "Try reconnecting."), 400
 
-    enc = aesgcm_encrypt(refresh_token)
-    payload = {
-        "email": email,
-        "display_name": display_name,
-        "encrypted_refresh_token": enc,
-        "scopes": tokens.get('scope', "").split(" ")
-    }
+        # Encrypt refresh token
+        enc = aesgcm_encrypt(refresh_token)
 
-    # Upsert into supabase
-    res = supabase.table("gmail_accounts").upsert(payload, on_conflict=["email"]).execute()
-    if res.status_code >= 400:
-        return f"db error: {res.text}", 500
+        payload = {
+            "email": email,
+            "display_name": display_name,
+            "encrypted_refresh_token": enc,
+            "scopes": tokens.get('scope', "").split(" ")
+        }
+
+        # Try upsert; handle APIError (e.g., missing unique constraint) and inspect res.error
+        try:
+            res = supabase.table("gmail_accounts").upsert(payload, on_conflict=["email"]).execute()
+            api_error = getattr(res, "error", None)
+            if api_error:
+                app.logger.error("Supabase upsert error: %s", api_error)
+                return "DB error storing Gmail account (see server logs)", 500
+            app.logger.info("Connected Gmail account: %s", email)
+            return f"Connected {email} — you can close this window."
+        except APIError as e:
+            # This often indicates ON CONFLICT issue (no unique constraint) or other PostgREST error.
+            app.logger.error("PostgREST APIError during upsert: %s", e)
+            # Try a fallback insert (may fail if duplicates exist)
+            try:
+                ins = supabase.table("gmail_accounts").insert(payload).execute()
+                ins_err = getattr(ins, "error", None)
+                if ins_err:
+                    app.logger.error("Insert fallback error: %s", ins_err)
+                    return "DB insert fallback failed (see server logs)", 500
+                app.logger.info("Connected Gmail account via insert fallback: %s", email)
+                return f"Connected {email} (insert fallback) — you can close this window."
+            except Exception as e2:
+                app.logger.error("Fallback insert raised: %s", traceback.format_exc())
+                return "DB error storing Gmail account (see server logs)", 500
+
+    except Exception as e:
+        app.logger.error("Unhandled exception in auth_google_callback: %s", traceback.format_exc())
+        return "Internal server error (see logs)", 500
     return f"Connected {email}. You can close this window."
 
 # Public subscribe API
