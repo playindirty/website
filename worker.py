@@ -36,7 +36,14 @@ def send_queued():
     gmail_acc = gmail_acc.data[0]
     access_token = get_gmail_access_token(gmail_acc["encrypted_refresh_token"])
 
-    queued = supabase.table("send_queue").select("*").is_("sent_at", None).limit(50).execute()
+    queued = (
+    supabase.table("send_queue")
+    .select("*")
+    .is_("sent_at", "null")  # null as string, not None
+    .limit(50)
+    .execute()
+)
+
     if not queued.data:
         print("No queued emails.")
         return
