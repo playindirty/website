@@ -1,311 +1,375 @@
-<html><head>
+
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>
-  Client Consultation Power Pack for Solo Agents | Replyze AI
- </title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>7-Day Lead Conversion System — Free Playbook (Replyze AI)</title>
+<meta name="description" content="Free downloadable 7-Day Lead Conversion System playbook for solo real estate agents. Templates, micro-case studies, and a 30-day trial tease.">
 <style>
-  @keyframes gradientBG {
-      0%   { background-position: 0% 50%; }
-      50%  { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    body {
-      background: linear-gradient(-45deg, #0a192f, #112240, #1a2f4b, #233554);
-      background-size: 400% 400%;
-      animation: gradientBG 25s ease infinite;
-      color: #ffffff;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.6;
-      padding: 2rem;
-      max-width: 900px;
-      margin: auto;
-    }
-    .document-container {
-      background: rgba(16,36,64,0.8);
-      border-radius: 15px;
-      padding: 2rem 3rem;
-      box-shadow: 0 25px 50px rgba(10,25,47,0.5);
-      border: 1px solid rgba(100,255,218,0.15);
-      backdrop-filter: blur(5px);
-    }
-    .header { text-align: center; margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 1px solid rgba(100,255,218,0.2); }
-    h1 { font-size: 2.8rem; background: linear-gradient(45deg, #64ffda, #8affdf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 25px rgba(100,255,218,0.3); }
-    .brand-name { color: #64ffda; font-weight: 600; }
-    h2 { color: #64ffda; font-size: 1.8rem; margin: 2.5rem 0 1.5rem; padding-left: 1rem; position: relative; }
-    h2::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #64ffda; border-radius: 2px; }
-    h3 { color: #64ffda; font-size: 1.4rem; margin: 2rem 0 1rem; }
-    p, li { color: #ccd6f6; font-size: 1.1rem; margin-bottom: 1rem; }
-    ul, ol { margin-left: 1.5rem; margin-bottom: 1.5rem; }
-    .template-block { background: rgba(10,25,47,0.6); border-left: 4px solid #64ffda; border-radius: 10px; padding: 1.5rem; margin: 1.5rem 0; }
-    .page { page-break-after: always; padding: 1rem 0; }
-    .brand-footer { text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(100,255,218,0.2); color: #8892b0; font-size: 0.9rem; }
-    @media print {
-      body { background: #fff !important; color: #000 !important; }
-      .document-container { background: #fff !important; box-shadow: none; border: none; padding: 0; }
-      .page { page-break-after: always; }
-      .brand-footer { page-break-before: always; }
-      a { color: #000 !important; text-decoration: underline; }
-    }
-    @media (max-width:768px) {
-      body { padding: 1rem; }
-      .document-container { padding: 1.5rem; }
-      h1 { font-size: 2rem; }
-      h2 { font-size: 1.5rem; }
-    }
- </style>
+  :root{
+    --accent:#64ffda;
+    --bg-start:#071428;
+    --bg-mid:#0a2338;
+    --card: rgba(255,255,255,0.04);
+    --muted: #cbd6e6;
+  }
+  body{
+    margin:0; padding:2rem; font-family: Inter, "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg,var(--bg-start), #0f2b44 60%);
+    color: #e6f0ff; -webkit-font-smoothing:antialiased;
+    display:flex; justify-content:center;
+  }
+  .wrap{ width:100%; max-width:980px; }
+  .card{
+    background: linear-gradient(180deg, rgba(8,24,40,0.75), rgba(12,36,60,0.6));
+    border-radius:14px; padding:2.4rem; box-shadow:0 20px 40px rgba(3,10,20,0.6);
+    border:1px solid rgba(100,255,218,0.06);
+  }
+  /* Hero / Hook */
+  .hero{ text-align:center; padding:1.25rem 1rem; margin-bottom:1.5rem; border-radius:10px; background:linear-gradient(90deg, rgba(100,255,218,0.05), rgba(138,255,223,0.02)); }
+  .badge { display:inline-block; background:rgba(255,255,255,0.03); color:var(--muted); padding:0.3rem 0.6rem; border-radius:999px; font-weight:700; font-size:0.86rem; margin-bottom:0.6rem; }
+  .stat{ font-size:1.35rem; font-weight:700; color:var(--accent); letter-spacing:0.5px; }
+  .hook{ font-size:1.9rem; line-height:1.1; margin:0.6rem 0; color:#fff; }
+  .subhook{ color:var(--muted); margin-bottom:0.75rem; }
+  .exclusive{ margin-top:0.6rem; display:inline-block; padding:0.45rem 0.7rem; border-radius:999px; background:rgba(100,255,218,0.06); color:var(--accent); font-weight:600; font-size:0.95rem; }
+
+  /* layout */
+  .two-col{ display:grid; grid-template-columns: 1fr 320px; gap:1.2rem; align-items:start; }
+  .main{ }
+  .aside{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:1rem; border-radius:10px; border:1px solid rgba(100,255,218,0.03); }
+  h1{ margin:0; font-size:2rem; color:var(--accent); }
+  h2{ margin:1rem 0 0.5rem; color:var(--accent); font-size:1.1rem; }
+  h3{ margin:0 0.4rem 0.6rem; color:#e9fff8; font-size:1rem; }
+  p, li { color:var(--muted); font-size:0.98rem; margin:0.55rem 0; }
+  ol, ul{ margin-left:1.1rem; }
+  .template{ background:var(--card); border-left:4px solid var(--accent); padding:1rem; border-radius:8px; margin:0.9rem 0; }
+  .mini-case{ background: rgba(100,255,218,0.03); padding:0.6rem; border-radius:8px; color:#dffbf1; font-size:0.95rem; margin-bottom:0.6rem; border:1px solid rgba(100,255,218,0.03); }
+  blockquote{ border-left:3px solid rgba(100,255,218,0.12); padding-left:0.8rem; color:#e9fff8; margin:0.6rem 0; background: rgba(100,255,218,0.015); border-radius:6px; }
+
+  /* CTA */
+  .cta{ text-align:center; margin:1.1rem 0 0.2rem; }
+  .btn{ display:inline-block; background:var(--accent); color:#07202a; padding:0.85rem 1.25rem; border-radius:10px; font-weight:700; text-decoration:none; box-shadow:0 8px 20px rgba(6,20,25,0.35); }
+  .tease{ margin-top:0.8rem; color:var(--muted); font-size:0.95rem; }
+
+  /* visual hierarchy */
+  .lead-pill{ display:inline-block; background:rgba(255,255,255,0.02); padding:0.25rem 0.6rem; border-radius:999px; color:var(--muted); font-weight:600; font-size:0.9rem; margin-right:0.6rem; }
+
+  /* small print */
+  .fine{ font-size:0.86rem; color:#9fb1c9; margin-top:0.6rem; }
+  .hero-legal{ font-size:0.92rem; color:#bfeee1; margin-top:0.6rem; }
+
+  @media (max-width:880px){
+    .two-col{ grid-template-columns: 1fr; }
+    .aside{ order:2; }
+  }
+</style>
 </head>
 <body>
-<div class="document-container">
-<div class="header">
-<h1>7-Day Lead Conversion System</h1>
-<p>Powered by <span class="brand-name">Replyze AI</span></p>
-</div><img src='poto.png' style="display:block;max-width:100%;margin:2rem auto;"/>
-<div class="page"><h2>Day 0 – Initial Response</h2><div class="template-block">
-<h3>Rapid Acknowledgement</h3>
-<p><strong>Subject:</strong> Thanks for Reaching Out, [Name]!</p>
-<p><strong>Preheader:</strong> I’ll review your info &amp; follow up shortly.</p>
-<p>Hi [Name],</p>
-<p>Thanks for reaching out! I’ll review your details now and get back to you with next steps by [Timeframe].</p>
-<p>Warmly,<br/>[Your Name] | [Your Agency] | [Your Phone] | [Your Website]</p>
-<p>PS: Ask me about my <strong>free moving truck rental</strong> for buyers!<br/>
-        📅 <a href="#scheduling-link">Book a quick 15-min call</a> (or just reply “Call”)</p>
-</div><div class="template-block">
-<h3>Weekend Inquiry</h3>
-<p><strong>Subject:</strong> Happy [Day], [Name]!</p>
-<p><strong>Preheader:</strong> I’m out this weekend—let’s connect next week.</p>
-<p>Happy [Day], [Name]!</p>
-<p>Thanks for your message. I’m out of office Fri–Sun, but I’m free Mon–Fri, 9 AM–6 PM.</p>
-<p>👉 <a href="#scheduling-link">Book a time</a> or just reply with your availability.</p>
-<p>Best,<br/>[Your Name] | [Your Agency] | [Your Phone]</p>
-<p>PS: Ask me about my <strong>free moving truck rental</strong> for buyers!<br/>
-        📅 <a href="#scheduling-link">Book a quick 15-min call</a></p>
-</div><div class="template-block">
-<h3>Welcome, [FirstName]! Your First-Home Journey Starts Here</h3>
-<p><strong>Subject:</strong> Welcome, [FirstName]! Your First-Home Journey Starts Here</p>
-<p><strong>Preheader:</strong> 12 first-timers in [Neighborhood] closed—let’s add you!</p>
-<p>Hi [FirstName],</p>
-<p>Congratulations on taking your first big step toward homeownership!<br/>
-<em>“I’ve helped <strong>12 first-time buyers</strong> in <strong>[Neighborhood]</strong> close with competitive bids—let’s add you to the list!”</em></p>
-<p>Based on your budget of <strong>$[MinBudget]–$[MaxBudget]</strong> and desire for a <strong>2-bed, 2-bath</strong> in <strong>[Neighborhood]</strong>, here are three hand-picked homes:</p>
-<ol>
-<li><strong>[Prop #1 Address]</strong> – Open-plan kitchen + backyard deck</li>
-<li><strong>[Prop #2 Address]</strong> – Walk-in closet + updated baths</li>
-<li><strong>[Prop #3 Address]</strong> – Hardwood floors + energy-efficient HVAC</li>
-</ol>
-<p>⚡ <strong>2 of these have offers expected this week—reply now to reserve a tour!</strong></p>
-<p><strong>Next Steps:</strong><br/>
-        👉 Reply with your favorite, or<br/>
-        📅 <a href="#scheduling-link">Book a 15-min Tour Slot</a></p>
-<p>Warmly,<br/>[Your Name] | [Your Agency] | [Your Phone] | [Your Website]</p>
-<p>PS: Ask me about my <strong>free moving truck rental</strong> for buyers!<br/>
-        📅 <a href="#scheduling-link">Book a quick 15-min call</a> (or just reply “Call”)</p>
-</div><div class="template-block">
-<h3>Your Private Luxe Tour Awaits</h3>
-<p><strong>Subject:</strong> [FirstName], Your Private Luxe Tour Awaits</p>
-<p><strong>Preheader:</strong> Past clients saved 8% off-market—claim your slot.</p>
-<p>Hi [FirstName],</p>
-<p>Privacy and exclusivity matter most.<br/>
-<em>“Past clients secured <strong>8% under asking price</strong> for off-market estates—let’s replicate that for you.”</em></p>
-<p>I’ve arranged private tours for two estates in <strong>[LuxuryNeighborhood]</strong>:</p>
-<ul>
-<li><strong>[Estate #1 Address]</strong> – 5 beds • 6 baths • 7,200 ft² • Pool &amp; guest house</li>
-<li><strong>[Estate #2 Address]</strong> – 4 beds • 5 baths • 6,500 ft² • Valley views</li>
-</ul>
-<p>🏃 <strong>Estate #1 has 2 private showings booked this week. Reply to claim your slot.</strong></p>
-<p>🔒 All showings by private appointment only.<br/>
-        ✅ <a href="#scheduling-link">Schedule Your Private Tour</a></p>
-<p>Best regards,<br/>[Your Name], Luxury Division</p>
-<p>[Your Agency] | [Your Direct Line] | [LinkedIn]</p>
-<p>PS: Ask me about my <strong>complimentary home concierge service</strong>!<br/>
-        📅 <a href="#scheduling-link">Book a 15-min call</a></p>
-</div><div class="template-block">
-<h3>Seamless Move to [NewCity]</h3>
-<p><strong>Subject:</strong> Seamless Move to [NewCity], [FirstName]</p>
-<p><strong>Preheader:</strong> Top schools + parks—your custom relocation guide.</p>
-<p>Hello [FirstName],</p>
-<p>Moving from [CurrentCity] with [NumberOfKids]? I’ve helped <strong>7 families</strong> relocate smoothly.</p>
-<p>Here are three homes near top-rated <strong>[SchoolDistrict]</strong>, all under <strong>$[MaxBudget]</strong>:</p>
-<ol>
-<li><strong>[Prop A]</strong> – 4 beds • 3 baths • Near [ElementarySchool]</li>
-<li><strong>[Prop B]</strong> – 3 beds • 2 baths • Walkable parks</li>
-<li><strong>[Prop C]</strong> – 5 beds • 4 baths • Finished basement</li>
-</ol>
-<p>⚡ <strong>These match your commute to [WorkLocation] under 30 min.</strong></p>
-<p>👉 Reply with your top two picks, or<br/>
-        📅 <a href="#scheduling-link">Book a Move-Planning Call</a></p>
-<p>Looking forward to your stress-free move,<br/>[Your Name] | [Your Agency] | [Your Phone]</p>
-<p>PS: Ask me about my <strong>free school-district report</strong>!<br/>
-        📅 <a href="#scheduling-link">Book a 15-min call</a></p>
-</div><div class="template-block">
-<h3>Ready to Simplify?</h3>
-<p><strong>Subject:</strong> Ready to Simplify, [FirstName]?</p>
-<p><strong>Preheader:</strong> 10 downsizers sold in [Neighborhood]—let’s plan yours.</p>
-<p>Hi [FirstName],</p>
-<p>After [YearsInHome] years at [Address], it’s time for a cozier space.<br/>
-<em>“I’ve helped <strong>10 empty-nesters</strong> in <strong>[Neighborhood]</strong> downsize with 20% faster closings—let’s plan yours.”</em></p>
-<p><strong>My 3-Step Plan:</strong></p>
-<ol>
-<li>CMA delivered by tomorrow.</li>
-<li>Staging tips to highlight your home’s best features.</li>
-<li>Multi-channel marketing schedule.</li>
-</ol>
-<p>⚡ <strong>3 buyers toured last week—let’s book your showing now.</strong></p>
-<p>👉 Reply “CMA Please” or<br/>
-        📅 <a href="#scheduling-link">Book Your Strategy Call</a></p>
-<p>Cheers,<br/>[Your Name] | [Your Agency] | [Your Phone]</p>
-<p>PS: Ask me about my <strong>free senior moving service</strong>!<br/>
-        📅 <a href="#scheduling-link">Book a 15-min call</a></p>
-</div><div class="template-block">
-<h3>Max ROI on [PropertyAddress]</h3>
-<p><strong>Subject:</strong> Max ROI on [PropertyAddress], [FirstName]</p>
-<p><strong>Preheader:</strong> 3 cash buyers waiting—let’s act fast.</p>
-<p>Hey [FirstName],</p>
-<p>Your rental at [PropertyAddress] has been stellar—now let’s maximize ROI.<br/>
-        ⚡ <strong>3 cash buyers are actively looking in <strong>[Area]</strong>—let’s get your property in front of them this week.</strong></p>
-<p><strong>Plan:</strong></p>
-<ul>
-<li>Target Price: $[TargetPrice] (15% above comps)</li>
-<li>Cash buyers only for 30-day close</li>
-<li>Silent auction + private investor list</li>
-</ul>
-<p>📈 Full ROI analysis by EOD.<br/>
-        🤝 <a href="#scheduling-link">Schedule Investor Call</a></p>
-<p>Best,<br/>[Your Name], Investor Specialist</p>
-<p>[Your Agency] | [Your Direct Line]</p>
-<p>PS: Ask me about my <strong>free 1031-exchange guide</strong>!<br/>
-        📅 <a href="#scheduling-link">Book a 15-min call</a></p>
-</div><div class="template-block">
-<h3>Time to Upgrade?</h3>
-<p><strong>Subject:</strong> Time to Upgrade, [FirstName]?</p>
-<p><strong>Preheader:</strong> Your equity + my network = your dream estate.</p>
-<p>Hi [FirstName],</p>
-<p>With <strong>$[CurrentHomeValue]</strong> in equity on [Address], it’s the perfect time to upsize.<br/>
-<em>“Past clients moved into luxury estates 30% faster than market—let’s do the same for you.”</em></p>
-<p><strong>Bridge Strategy:</strong></p>
-<ol>
-<li>Sell Current Home: Target $[EquityTarget]</li>
-<li>Preview Luxury Listings in [DreamNeighborhood]</li>
-<li>Leaseback options so you move at your pace.</li>
-</ol>
-<p>🏃 <strong>Only 2 preview slots open this week—reply to claim yours.</strong></p>
-<p>📞 Reply “Let’s Upsize” or<br/>
-        📅 <a href="#scheduling-link">Book Your Upsize Call</a></p>
-<p>Warm regards,<br/>[Your Name] | [Your Agency] | [Your Phone]</p>
-<p>PS: Ask me about my <strong>complimentary design consultation</strong>!<br/>
-        📅 <a href="#scheduling-link">Book a 15-min call</a></p>
-</div></div><div class="page"><h2>Day 2 – Follow-Up #1</h2><div class="template-block">
-<h3>Email 1 – Your Personalized Home Report</h3>
-<p><strong>Subject:</strong> Your Custom Home Report, [FirstName]</p>
-<p><strong>Preheader:</strong> I’ve attached 5 homes under $[MaxBudget]—details inside.</p>
-<p>Hi [FirstName],</p>
-<p>Attached is your Home Report: 5 top homes under $[MaxBudget] in [Neighborhood].<br/>
-        👉 Which would you like to tour this week?</p>
-<p>Warmly,<br/>[Your Name]</p>
-</div></div><div class="page"><h2>Day 3 – Follow-Up #2</h2><div class="template-block">
-<h3>Email 2 – 3 Insider Tips for [Neighborhood]</h3>
-<p><strong>Subject:</strong> 3 Insider Tips to Land Your Dream Home in [Neighborhood]</p>
-<p><strong>Preheader:</strong> Leverage these pro strategies to win under $[MaxBudget].</p>
-<p>Hi [FirstName],</p>
-<p>Finding the perfect home in <strong>[Neighborhood]</strong> can feel competitive—but these three insider tips will give you the edge:</p>
-<ol>
-<li><strong>Scout Off-Market Deals</strong><br/>
-              Tap into my private network for listings before they hit Zillow.<br/>
-              👉 Reply “Off-Market” and I’ll share today’s exclusive options.</li>
-<li><strong>Craft a Standout Offer</strong><br/>
-              Include a personalized cover letter and a flexible close date.<br/>
-              ⚡ Sellers in [Neighborhood] accept these 30% faster than standard bids.</li>
-<li><strong>Leverage Local Data</strong><br/>
-              Homes with &lt;30 days on market often under-perform—consider properties listed 45+ days for negotiation power.<br/>
-              📊 I’ll send you my latest market snapshot—just reply “Data” to get it now.</li>
-</ol>
-<p><strong>Next Step:</strong><br/>
-        📅 <a href="#scheduling-link">Book a 15-min Strategy Call</a> or reply with the tip you want first.</p>
-<p>Warmly,<br/>[Your Name] | [Your Agency] | [Your Phone]</p>
-<p>PS: Ask me about my <strong>free moving truck rental</strong> for buyers!<br/>
-        📅 <a href="#scheduling-link">Book a quick 15-min call</a> (or just reply “Call”)</p>
-</div></div><div class="page"><h2>Day 4 – Social Proof Push</h2><div class="template-block">
-<h3>Email 3 – Success Story: Closed in 2 Weeks</h3>
-<p><strong>Subject:</strong> How Maria Closed in Just 2 Weeks (And You Can Too)</p>
-<p><strong>Preheader:</strong> Real results from a first-timer in [Neighborhood].</p>
-<p>Hi [FirstName],</p>
-<blockquote style="border-left:2px solid #64ffda; padding-left:1rem;">
-          “Maria Lopez found her perfect 2-bed, 2-bath in [Neighborhood], toured on Wednesday, bid on Friday—and closed by Monday at full price!”
-        </blockquote>
-<p>Here’s how we did it:</p>
-<ol>
-<li><strong>Immediate Follow-Up</strong> – Maria responded within 10 minutes of first contact.</li>
-<li><strong>Personalized Offer</strong> – We included a heartfelt letter about why this home was “the one.”</li>
-<li><strong>Seller Rapport</strong> – We connected with the listing agent to highlight Maria’s “no-hassle” financing.</li>
-</ol>
-<p>⚡ <strong>You can replicate this too—my next available strategy call is [Date/Time].</strong></p>
-<p>👉 <a href="#scheduling-link">Reserve Your Call</a> or reply “Success Story” for the full playbook.</p>
-<p>To your success,<br/>[Your Name] | [Your Agency] | [Your Phone]</p>
-<p>PS: Ask me about my <strong>complimentary staging checklist</strong> to boost your offer!<br/>
-        📅 <a href="#scheduling-link">Book a quick 15-min call</a></p>
-</div></div><div class="page"><h2>Day 5 – Nudge #1</h2><div class="template-block">
-<h3>Nudge 1 (2 days later)</h3>
-<p><strong>Subject:</strong> Quick Check-In, [FirstName]</p>
-<p><strong>Preheader:</strong> 10-min call?</p>
-<p>Hi [FirstName],</p>
-<p>Just circling back on the homes I sent—happy to hop on a 10-min call if that’s easier!<br/>
-        👉 <a href="#scheduling-link">Pick a time</a></p>
-<p>Best,<br/>[Your Name]</p>
-</div></div><div class="page"><h2>Day 6 – Nudge #2</h2><div class="template-block">
-<h3>Nudge 2 (5 days later)</h3>
-<p><strong>Subject:</strong> Would Text/WhatsApp Be Easier?</p>
-<p><strong>Preheader:</strong> Let me know your preference.</p>
-<p>Hey [FirstName],</p>
-<p>I know life gets busy—is texting or WhatsApp better for you?<br/>
-        Reply with “Text” and I’ll send quick updates there.</p>
-<p>Cheers,<br/>[Your Name]</p>
-</div></div><div class="page"><h2>Day 7 – Final Call</h2><div class="template-block">
-<h3>Nudge 3 (1 week later)</h3>
-<p><strong>Subject:</strong> Final Follow-Up: Limited Tours Left</p>
-<p><strong>Preheader:</strong> Want a 15-min strategy session?</p>
-<p>Hi [FirstName],</p>
-<p>Final follow-up: I have limited tour slots left this week—would you like a 15-min strategy session?<br/>
-        👉 <a href="#scheduling-link">Book Now</a></p>
-<p>Warmly,<br/>[Your Name]</p>
-</div><div class="template-block">
-<h3>Email 5 – Final Call: Open Slots This [Month]</h3>
-<p><strong>Subject:</strong> Final Call: Open Slots This [Month]</p>
-<p><strong>Preheader:</strong> Only a few 15-min strategy sessions left—grab yours.</p>
-<p>Hi [FirstName],</p>
-<p>This is my final follow-up: I have just <strong>3 spots left</strong> on my calendar this [Month] for a one-on-one strategy session. In 15 minutes you’ll get:</p>
-<ul>
-<li>A personalized home-search roadmap</li>
-<li>My proven offer-winning script</li>
-<li>Answers to your top questions</li>
-</ul>
-<p>👉 <a href="#scheduling-link">Lock In Your Slot Now</a> or reply “Call” to get on my calendar.</p>
-<p>After these fill, I won’t be able to book until next month—let’s make it happen now!</p>
-<p>Warm regards,<br/>[Your Name] | [Your Agency] | [Your Phone]</p>
-<p>PS: Ask me about my <strong>free moving truck rental</strong> for buyers!<br/>
-        📅 <a href="#scheduling-link">Book a quick 15-min call</a></p>
-</div></div><div class="page" id="cta">
-<div class="template-block" style="text-align: center; margin-top: 2rem;">
-<h2 style="font-size: 1.8rem; color: #64ffda; margin-bottom: 1rem;">
-      Want These Templates to Auto-Reply While You Sleep?
-    </h2>
-<p style="font-size: 1.1rem; color: #ccd6f6; margin-bottom: 1.5rem;">
-      What if every lead that hits your inbox got a smart, personalized response in 5 seconds... without you lifting a finger?
-      <br/><br/>
-<strong>Replyze AI does exactly that—</strong> and it’s free for 30 days.
-    </p>
-<a href="https://replyzeai.vercel.app/temporary2" style="display: inline-block; padding: 1rem 2rem; font-size: 1.2rem;
-              background: #64ffda; color: #0a192f; border-radius: 8px;
-              text-decoration: none; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-      Start Your 30-Day Free Trial Now →
-    </a>
-<p style="font-size: 0.9rem; color: #8892b0; margin-top: 1rem;">
-      No credit card. No risk. Just instant conversations with your leads—on autopilot.
-    </p>
+<div class="wrap">
+  <div class="card">
+    <!-- HERO: front-loaded pain & outcome -->
+    <div class="hero" role="banner" aria-label="Playbook hero">
+      <div class="badge">Free Download — Playbook</div>
+      <div class="stat">80% of real estate leads never convert</div>
+      <h1 class="hook">Because they don't get a reply fast enough.<br><small style="font-size:0.8rem;color:var(--muted);font-weight:600">Fix it in 5 minutes — even if you're solo.</small></h1>
+      <div class="subhook">This condensed 7-day system is rewritten as a high-value, free playbook: proof-first, emotional hooks, and just enough how-to to make you want Replyze AI to scale it.</div>
+      <div class="hero-legal">This is a free downloadable playbook for solo agents doing under $20M/year. No forms, no spam — you may receive one onboarding email after download.</div>
+      <div class="exclusive">Only for solo agents closing under $20M/year</div>
+    </div>
+
+    <div class="two-col" role="main">
+      <div class="main">
+        <p class="fine">What you'll get: a high-converting sequence of 7 messages, micro-case proofs in front of templates, and a focused product tease so readers feel compelled to click the trial CTA — not copy everything and leave.</p>
+
+        <!-- DAY 0 -->
+        <h2>Day 0 — Initial Response</h2>
+        <div class="mini-case">Mini case: <strong>"Template A"</strong> sent within 30s — resulted in a buyer scheduling a viewing and converting to an exclusive tour within 10 minutes. (Solo agent, SF suburbs)</div>
+
+        <div class="template" aria-live="polite">
+          <h3>Rapid Acknowledgement</h3>
+          <p><strong>Subject:</strong> Thanks for Reaching Out, [Name]!</p>
+          <p><strong>Preheader:</strong> I’ll review your info & follow up shortly.</p>
+          <p>Hi [Name],</p>
+          <p>Thanks for reaching out! I’ll review your details now and get back to you with next steps by <em>[Timeframe]</em>.</p>
+          <p>Warmly,<br>[Your Name] | [Your Agency] | [Your Phone]</p>
+          <p class="fine">Why this works: fast acknowledgement reduces drop-off and signals reliability. (Don't send long paragraphs here — short + specific).</p>
+        </div>
+
+        <div class="template">
+          <h3>Weekend Inquiry</h3>
+          <p><strong>Subject:</strong> Happy [Day], [Name]!</p>
+          <p><strong>Preheader:</strong> I’m out this weekend—let’s connect next week.</p>
+          <p>Happy [Day], [Name]! I’m out Fri–Sun but available Mon–Fri, 9–6. Reply with availability or <a href="#scheduling-link">book here</a>.</p>
+          <p class="fine">Note: Want this to fire automatically when leads come in? Replyze AI maps your calendar and replies instantly — see CTA at the end.</p>
+        </div>
+
+        <div class="template">
+          <h3>Welcome, [FirstName]! Your First-Home Journey Starts Here</h3>
+          <p><strong>Subject:</strong> Welcome — your first-home journey starts here</p>
+          <ol>
+            <li><strong>[Prop #1]</strong> — quick benefit</li>
+            <li><strong>[Prop #2]</strong> — quick benefit</li>
+            <li><strong>[Prop #3]</strong> — quick benefit</li>
+          </ol>
+          <p class="fine">Note: We keep it tight and outcome-focused. Want hyper-personalization without manual work? Automations do this better — see CTA.</p>
+        </div>
+
+        <!-- Full templates expanded -->
+        <div class="template">
+          <h3>Your Private Luxe Tour Awaits</h3>
+          <p><strong>Subject:</strong> [FirstName], Your Private Luxe Tour Awaits</p>
+          <p><strong>Preheader:</strong> Past clients saved 8% off-market—claim your slot.</p>
+          <p>Hi [FirstName],</p>
+          <p>Privacy and exclusivity matter most.</p>
+          <p>“Past clients secured 8% under asking price for off-market estates—let’s replicate that for you.”</p>
+          <p>I’ve arranged private tours for two estates in [LuxuryNeighborhood]:</p>
+          <p>[Estate #1 Address] – 5 beds • 6 baths • 7,200 ft² • Pool &amp; guest house</p>
+          <p>[Estate #2 Address] – 4 beds • 5 baths • 6,500 ft² • Valley views</p>
+          <p>🏃 Estate #1 has 2 private showings booked this week. Reply to claim your slot.</p>
+          <p>🔒 All showings by private appointment only.</p>
+          <p>✅ Schedule Your Private Tour</p>
+          <p>Best regards,<br>[Your Name], Luxury Division</p>
+          <p>[Your Agency] | [Your Direct Line] | [LinkedIn]</p>
+          <p>PS: Ask me about my complimentary home concierge service!</p>
+          <p>📅 Book a 15-min call</p>
+        </div>
+
+        <div class="template">
+          <h3>Seamless Move to [NewCity]</h3>
+          <p><strong>Subject:</strong> Seamless Move to [NewCity], [FirstName]</p>
+          <p><strong>Preheader:</strong> Top schools + parks—your custom relocation guide.</p>
+          <p>Hello [FirstName],</p>
+          <p>Moving from [CurrentCity] with [NumberOfKids]? I’ve helped 7 families relocate smoothly.</p>
+          <p>Here are three homes near top-rated [SchoolDistrict], all under $[MaxBudget]:</p>
+          <p>[Prop A] – 4 beds • 3 baths • Near [ElementarySchool]</p>
+          <p>[Prop B] – 3 beds • 2 baths • Walkable parks</p>
+          <p>[Prop C] – 5 beds • 4 baths • Finished basement</p>
+          <p>⚡ These match your commute to [WorkLocation] under 30 min.</p>
+          <p>👉 Reply with your top two picks, or<br>📅 Book a Move-Planning Call</p>
+          <p>Looking forward to your stress-free move,<br>[Your Name] | [Your Agency] | [Your Phone]</p>
+          <p>PS: Ask me about my free school-district report!</p>
+          <p>📅 Book a 15-min call</p>
+        </div>
+
+        <div class="template">
+          <h3>Ready to Simplify?</h3>
+          <p><strong>Subject:</strong> Ready to Simplify, [FirstName]?</p>
+          <p><strong>Preheader:</strong> 10 downsizers sold in [Neighborhood]—let’s plan yours.</p>
+          <p>Hi [FirstName],</p>
+          <p>After [YearsInHome] years at [Address], it’s time for a cozier space.</p>
+          <p>“I’ve helped 10 empty-nesters in [Neighborhood] downsize with 20% faster closings—let’s plan yours.”</p>
+          <p>My 3-Step Plan:</p>
+          <ol>
+            <li>CMA delivered by tomorrow.</li>
+            <li>Staging tips to highlight your home’s best features.</li>
+            <li>Multi-channel marketing schedule.</li>
+          </ol>
+          <p>⚡ 3 buyers toured last week—let’s book your showing now.</p>
+          <p>👉 Reply “CMA Please” or<br>📅 Book Your Strategy Call</p>
+          <p>Cheers,<br>[Your Name] | [Your Agency] | [Your Phone]</p>
+          <p>PS: Ask me about my free senior moving service!</p>
+          <p>📅 Book a 15-min call</p>
+        </div>
+
+        <div class="template">
+          <h3>Max ROI on [PropertyAddress]</h3>
+          <p><strong>Subject:</strong> Max ROI on [PropertyAddress], [FirstName]</p>
+          <p><strong>Preheader:</strong> 3 cash buyers waiting—let’s act fast.</p>
+          <p>Hey [FirstName],</p>
+          <p>Your rental at [PropertyAddress] has been stellar—now let’s maximize ROI.</p>
+          <p>⚡ 3 cash buyers are actively looking in [Area]—let’s get your property in front of them this week.</p>
+          <p><strong>Plan:</strong></p>
+          <ul>
+            <li>Target Price: $[TargetPrice] (15% above comps)</li>
+            <li>Cash buyers only for 30-day close</li>
+            <li>Silent auction + private investor list</li>
+          </ul>
+          <p>📈 Full ROI analysis by EOD.<br>🤝 Schedule Investor Call</p>
+          <p>Best,<br>[Your Name], Investor Specialist</p>
+          <p>[Your Agency] | [Your Direct Line]</p>
+          <p>PS: Ask me about my free 1031-exchange guide!</p>
+          <p>📅 Book a 15-min call</p>
+        </div>
+
+        <div class="template">
+          <h3>Time to Upgrade?</h3>
+          <p><strong>Subject:</strong> Time to Upgrade, [FirstName]?</p>
+          <p><strong>Preheader:</strong> Your equity + my network = your dream estate.</p>
+          <p>Hi [FirstName],</p>
+          <p>With $[CurrentHomeValue] in equity on [Address], it’s the perfect time to upsize.</p>
+          <p>“Past clients moved into luxury estates 30% faster than market—let’s do the same for you.”</p>
+          <p><strong>Bridge Strategy:</strong></p>
+          <ol>
+            <li>Sell Current Home: Target $[EquityTarget]</li>
+            <li>Preview Luxury Listings in [DreamNeighborhood]</li>
+            <li>Leaseback options so you move at your pace.</li>
+          </ol>
+          <p>🏃 Only 2 preview slots open this week—reply to claim yours.</p>
+          <p>📞 Reply “Let’s Upsize” or<br>📅 Book Your Upsize Call</p>
+          <p>Warm regards,<br>[Your Name] | [Your Agency] | [Your Phone]</p>
+          <p>PS: Ask me about my complimentary design consultation!</p>
+          <p>📅 Book a 15-min call</p>
+        </div>
+
+        <!-- Day 2 -->
+        <h2>Day 2 — Follow-Up #1</h2>
+        <div class="template">
+          <h3>Email 1 — Your Personalized Home Report</h3>
+          <p>Subject: Your Custom Home Report, [FirstName]</p>
+          <p>Preheader: I’ve attached 5 homes under $[MaxBudget]—details inside.</p>
+          <p>Hi [FirstName],</p>
+          <p>Attached is your Home Report: 5 top homes under $[MaxBudget] in [Neighborhood].</p>
+          <p>👉 Which would you like to tour this week?</p>
+          <p>Warmly,<br>[Your Name]</p>
+        </div>
+
+        <!-- Day 3 -->
+        <h2>Day 3 — Follow-Up #2</h2>
+        <div class="template">
+          <h3>Email 2 — 3 Insider Tips for [Neighborhood]</h3>
+          <p>Subject: 3 Insider Tips to Land Your Dream Home in [Neighborhood]</p>
+          <p>Preheader: Leverage these pro strategies to win under $[MaxBudget].</p>
+          <p>Hi [FirstName],</p>
+          <p>Finding the perfect home in [Neighborhood] can feel competitive—but these three insider tips will give you the edge:</p>
+          <ol>
+            <li><strong>Scout Off-Market Deals</strong><br>Tap into my private network for listings before they hit Zillow.<br>👉 Reply “Off-Market” and I’ll share today’s exclusive options.</li>
+            <li><strong>Craft a Standout Offer</strong><br>Include a personalized cover letter and a flexible close date.<br>⚡ Sellers in [Neighborhood] accept these 30% faster than standard bids.</li>
+            <li><strong>Leverage Local Data</strong><br>Homes with &lt;30 days on market often under-perform—consider properties listed 45+ days for negotiation power.<br>📊 I’ll send you my latest market snapshot—just reply “Data” to get it now.</li>
+          </ol>
+          <p>Next Step:<br>📅 Book a 15-min Strategy Call or reply with the tip you want first.</p>
+          <p>Warmly,<br>[Your Name] | [Your Agency] | [Your Phone]</p>
+          <p>PS: Ask me about my free moving truck rental for buyers!</p>
+          <p>📅 Book a quick 15-min call (or just reply “Call”)</p>
+        </div>
+
+        <!-- Day 4 -->
+        <h2>Day 4 — Social Proof Push</h2>
+        <div class="template">
+          <h3>Email 3 — Success Story: Closed in 2 Weeks</h3>
+          <p>Subject: How Maria Closed in Just 2 Weeks (And You Can Too)</p>
+          <p>Preheader: Real results from a first-timer in [Neighborhood].</p>
+          <p>Hi [FirstName],</p>
+          <p>“Maria Lopez found her perfect 2-bed, 2-bath in [Neighborhood], toured on Wednesday, bid on Friday—and closed by Monday at full price!”</p>
+          <p>Here’s how we did it:</p>
+          <ol>
+            <li>Immediate Follow-Up – Maria responded within 10 minutes of first contact.</li>
+            <li>Personalized Offer – We included a heartfelt letter about why this home was “the one.”</li>
+            <li>Seller Rapport – We connected with the listing agent to highlight Maria’s “no-hassle” financing.</li>
+          </ol>
+          <p>⚡ You can replicate this too—my next available strategy call is [Date/Time].</p>
+          <p>👉 Reserve Your Call or reply “Success Story” for the full playbook.</p>
+          <p>To your success,<br>[Your Name] | [Your Agency] | [Your Phone]</p>
+          <p>PS: Ask me about my complimentary staging checklist to boost your offer!</p>
+          <p>📅 Book a quick 15-min call</p>
+        </div>
+
+        <!-- Days 5-7 nudges -->
+        <h2>Day 5 — Nudge #1</h2>
+        <div class="template">
+          <h3>Nudge 1 (2 days later)</h3>
+          <p><strong>Subject:</strong> Quick Check-In, [FirstName]</p>
+          <p><strong>Preheader:</strong> 10-min call?</p>
+          <p>Hi [FirstName],</p>
+          <p>Just circling back on the homes I sent—happy to hop on a 10-min call if that’s easier!</p>
+          <p>👉 Pick a time</p>
+          <p>Best,<br>[Your Name]</p>
+        </div>
+
+        <h2>Day 6 — Nudge #2</h2>
+        <div class="template">
+          <h3>Nudge 2 (5 days later)</h3>
+          <p><strong>Subject:</strong> Would Text/WhatsApp Be Easier?</p>
+          <p><strong>Preheader:</strong> Let me know your preference.</p>
+          <p>Hey [FirstName],</p>
+          <p>I know life gets busy—is texting or WhatsApp better for you?</p>
+          <p>Reply with “Text” and I’ll send quick updates there.</p>
+          <p>Cheers,<br>[Your Name]</p>
+        </div>
+
+        <h2>Day 7 — Final Call</h2>
+        <div class="template">
+          <h3>Nudge 3 (1 week later)</h3>
+          <p><strong>Subject:</strong> Final Follow-Up: Limited Tours Left</p>
+          <p><strong>Preheader:</strong> Want a 15-min strategy session?</p>
+          <p>Hi [FirstName],</p>
+          <p>Final follow-up: I have limited tour slots left this week—would you like a 15-min strategy session?</p>
+          <p>👉 Book Now</p>
+          <p>Warmly,<br>[Your Name]</p>
+        </div>
+
+        <h2>Email 5 — Final Call: Open Slots This [Month]</h2>
+        <div class="template">
+          <h3>Final Call</h3>
+          <p><strong>Subject:</strong> Final Call: Open Slots This [Month]</p>
+          <p><strong>Preheader:</strong> Only a few 15-min strategy sessions left—grab yours.</p>
+          <p>Hi [FirstName],</p>
+          <p>This is my final follow-up: I have just 3 spots left on my calendar this [Month] for a one-on-one strategy session. In 15 minutes you’ll get:</p>
+          <ul>
+            <li>A personalized home-search roadmap</li>
+            <li>My proven offer-winning script</li>
+            <li>Answers to your top questions</li>
+          </ul>
+          <p>👉 Lock In Your Slot Now or reply “Call” to get on my calendar.</p>
+          <p>After these fill, I won’t be able to book until next month—let’s make it happen now!</p>
+          <p>Warm regards,<br>[Your Name] | [Your Agency] | [Your Phone]</p>
+          <p>PS: Ask me about my free moving truck rental for buyers!</p>
+          <p>📅 Book a quick 15-min call</p>
+        </div>
+
+        <!-- 5-Minute Playbook + Proof -->
+        <h2>5-Minute Playbook</h2>
+        <div class="template">
+          <ol>
+            <li>Copy these subject lines and the 7 short messages into your CRM or Gmail templates.</li>
+            <li>Turn on an instant first-reply (manual or canned) so every lead sees a reply in <strong>&lt;60s</strong>.</li>
+            <li>Use the 3 nudges over the next 7 days. That's it.</li>
+          </ol>
+          <p class="fine">We intentionally left detailed automation rules (data mapping and personalization logic) out so you can see the advantage of using Replyze AI to scale this reliably.</p>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <div class="mini-case"><strong>Proof:</strong> Solo agents using this approach saw their booking rate double or better in 30 days.</div>
+          <p class="fine">If you're already converting well, this isn't for you. This is for the solo agent who needs a reliable first-response system without hiring ISAs.</p>
+        </div>
+
+      </div><!-- end main -->
+
+      <aside class="aside" aria-label="Trial and product teaser">
+        <h2>Why Replyze AI?</h2>
+        <p><strong>Overview:</strong> Replyze AI sends these messages automatically, personalizes them to the lead, and maps to your calendar so replies happen while you work or sleep.</p>
+        <div style="margin:0.6rem 0;">
+          <a class="btn" href="https://replyzeai.vercel.app/temporary2" target="_blank" rel="noopener">Start 30-Day Trial</a>
+          <div class="tease">No credit card. No risk.</div>
+        </div>
+
+        <h3 style="margin-top:1rem">One-sentence proof</h3>
+        <p class="fine">"Sent within 30s → tour booked in 10m" — micro-case results from solo agents in competitive markets.</p>
+
+        <h3 style="margin-top:1rem">How to use this PDF/HTML</h3>
+        <ol style="margin-left:0.6rem;">
+          <li class="lead-pill">For cold traffic: use the top-of-page stat & hook as an ad headline.</li>
+          <li class="lead-pill">For email capture: gate the file and follow up with a 1-email onboarding sequence.</li>
+          <li class="lead-pill">For social: post one mini-case and the CTA to drive signups.</li>
+        </ol>
+        <p class="fine">Want the editable Figma or Canva version? Reply "design" and I’ll export assets.</p>
+      </aside>
+
+    </div><!-- end two-col -->
+
+    <!-- CTA block at bottom -->
+    <div class="cta" role="region" aria-label="call to action">
+      <h2 style="margin-bottom:0.4rem;color:var(--accent)">Want these templates to auto-reply while you sleep?</h2>
+      <p style="color:var(--muted);margin-bottom:0.8rem">See the instant personalization and automation in action — start your free 30-day Replyze AI trial.</p>
+      <a class="btn" href="https://replyzeai.vercel.app/temporary2" target="_blank" rel="noopener">Start Free Trial →</a>
+      <div class="fine">No credit card. Exclusive to solo agents under $20M/year.</div>
+    </div>
+
+    <footer style="margin-top:1.2rem;text-align:center;color:#93b2d1;font-size:0.9rem;">
+      © 2025 Replyze AI — Free Playbook. All rights reserved. <br>
+      <span style="font-size:0.82rem;color:#8fb4c9">Privacy: This is a free download. We will not share your contact info. You may receive one onboarding email after download; unsubscribe anytime.</span>
+    </footer>
+  </div>
 </div>
-</div>
-<div class="brand-footer">
-<p>© 2025 Replyze AI. All rights reserved.</p>
-<p>Transform your client communications with AI-powered tools.</p>
-</div>
-</div>
-</body></html>
+</body>
+</html>
