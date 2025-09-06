@@ -107,6 +107,7 @@
   </div>
 
   <script>
+    <script>
     let currentLists = [];
     let currentCampaigns = [];
     
@@ -128,14 +129,14 @@
     
     async function loadLists() {
       try {
-        // In a real implementation, you'd fetch this from an API endpoint
-        // For now, we'll simulate by getting unique list names from leads
         const response = await fetch('/api/leads/lists');
         if (response.ok) {
           const data = await response.json();
-          currentLists = data.lists;
+          currentLists = data.lists || [];
           renderLists();
           populateListDropdown();
+        } else {
+          console.error('Failed to load lists:', response.status);
         }
       } catch (error) {
         console.error('Error loading lists:', error);
@@ -152,9 +153,9 @@
       let html = '<table><tr><th>List Name</th><th>Lead Count</th><th>Actions</th></tr>';
       currentLists.forEach(list => {
         html += `<tr>
-          <td>${list.name}</td>
-          <td>${list.count}</td>
-          <td><button onclick="viewList('${list.name}')">View</button></td>
+          <td>${list.list_name}</td>
+          <td>${list.lead_count}</td>
+          <td><button onclick="viewList('${list.list_name}')">View</button></td>
         </tr>`;
       });
       html += '</table>';
@@ -165,7 +166,7 @@
       const dropdown = document.getElementById('campaignList');
       dropdown.innerHTML = '<option value="">Select a list</option>';
       currentLists.forEach(list => {
-        dropdown.innerHTML += `<option value="${list.name}">${list.name} (${list.count} leads)</option>`;
+        dropdown.innerHTML += `<option value="${list.list_name}">${list.list_name} (${list.lead_count} leads)</option>`;
       });
     }
     
