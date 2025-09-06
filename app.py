@@ -138,67 +138,6 @@ def auth_google_callback():
         app.logger.error("Unhandled exception:\n%s", traceback.format_exc())
         return "Internal server error", 500
 
-@app.route('/api/leads/import', methods=['POST'])
-def api_import_leads():
-    try:
-        if 'file' not in request.files:
-            return jsonify({"error": "No file uploaded"}), 400
-        
-        file = request.files['file']
-        list_name = request.form.get('list_name', 'Imported List')
-        
-        if file.filename == '':
-            return jsonify({"error": "No file selected"}), 400
-        
-        if not file.filename.endswith('.csv'):
-            return jsonify({"error": "Only CSV files are supported"}), 400
-        
-        # Read and parse CSV
-        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
-        csv_input = csv.DictReader(stream)
-        
-        # Check required columns
-        if 'email' not in csv_input.fieldnames:
-            return jsonify({"error": "CSV must contain an 'email' column"}), 400
-        
-        # Process rows
-        leads = []
-        for row in csv_input:
-            if not row.get('email'):
-                continue
-                
-            lead_data = {
-                "email": row.get('email', '').strip().lower(),
-                "name": row.get('name', ''),
-                "last_name": row.get('last name', row.get('last_name', '')),
-                "city": row.get('city', ''),
-                "brokerage": row.get('brokerage', ''),
-                "service": row.get('service', ''),
-                "list_name": list_name,
-                "custom_fields": {k: v for k, v in row.items() if k.lower() not in ['email', 'name', 'last name', 'last_name', 'city', 'brokerage', 'service', 'list_name']}
-            }
-            
-            # Validate email
-            try:
-                validate_email(lead_data['email'])
-                leads.append(lead_data)
-            except EmailNotValidError:
-                continue
-        
-        # Store in database
-        if leads:
-            result = supabase.table("leads").insert(leads, on_conflict="email").execute()
-            if getattr(result, "error", None):
-                return jsonify({"error": "db_error", "detail": str(result.error)}), 500
-        
-        return jsonify({
-            "ok": True, 
-            "imported": len(leads),
-            "sample": leads[0] if leads else {}
-        }), 200
-        
-    except Exception as e:
-        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 
 @app.route('/api/campaigns', methods=['GET'])
@@ -340,13 +279,103 @@ def api_queue_followup():
 
 # Add these new routes to your app.py
 
+# Add this import at the top of app.py
+import traceback
+
+# Update the api_get_lead_lists function
 @app.route('/api/leads/lists', methods=['GET'])
 def api_get_lead_lists():
     try:
-        # Get unique list names with counts
-        lists = supabase.rpc('get_lead_lists').execute()
-        return jsonify({"ok": True, "lists": lists.data}), 200
+        # Get unique list names with counts using direct query instead of RPC
+        query = supabase.table("leads").select("list_name").execute()
+        
+        # Manual counting since we can't use RPC
+        list_counts = {}
+        for lead in query.data:
+            list_name = lead.get('list_name', 'Unknown')
+            if list_name:
+                list_counts[list_name] = list_counts.get(list_name, 0) + 1
+        
+        lists = [{"list_name": name, "lead_count": count} for name, count in list_counts.items()]
+        return jsonify({"ok": True, "lists": lists}), 200
     except Exception as e:
+        app.logger.error("Error in api_get_lead_lists: %s", traceback.format_exc())
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
+
+# Update the api_import_leads function with better error handling
+@app.route('/api/leads/import', methods=['POST'])
+def api_import_leads():
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+        
+        file = request.files['file']
+        list_name = request.form.get('list_name', 'Imported List')
+        
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        if not file.filename.endswith('.csv'):
+            return jsonify({"error": "Only CSV files are supported"}), 400
+        
+        # Read and parse CSV
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        csv_input = csv.DictReader(stream)
+        
+        # Check required columns
+        if 'email' not in csv_input.fieldnames:
+            return jsonify({"error": "CSV must contain an 'email' column"}), 400
+        
+        # Process rows
+        leads = []
+        for row in csv_input:
+            if not row.get('email'):
+                continue
+                
+            # Clean the row data
+            cleaned_row = {}
+            for key, value in row.items():
+                if value is not None:
+                    cleaned_row[key.strip().lower()] = value.strip()
+            
+            lead_data = {
+                "email": cleaned_row.get('email', '').lower(),
+                "name": cleaned_row.get('name', ''),
+                "last_name": cleaned_row.get('last_name', cleaned_row.get('last name', '')),
+                "city": cleaned_row.get('city', ''),
+                "brokerage": cleaned_row.get('brokerage', ''),
+                "service": cleaned_row.get('service', ''),
+                "list_name": list_name,
+                "custom_fields": {k: v for k, v in cleaned_row.items() if k not in ['email', 'name', 'last_name', 'last name', 'city', 'brokerage', 'service', 'list_name']}
+            }
+            
+            # Validate email
+            try:
+                validate_email(lead_data['email'])
+                leads.append(lead_data)
+            except EmailNotValidError:
+                continue
+        
+        # Store in database
+        if leads:
+            # Insert in chunks to avoid payload size issues
+            CHUNK_SIZE = 100
+            imported_count = 0
+            for i in range(0, len(leads), CHUNK_SIZE):
+                chunk = leads[i:i+CHUNK_SIZE]
+                result = supabase.table("leads").upsert(chunk, on_conflict="email").execute()
+                if getattr(result, "error", None):
+                    return jsonify({"error": "db_error", "detail": str(result.error)}), 500
+                imported_count += len(chunk)
+        
+        return jsonify({
+            "ok": True, 
+            "imported": len(leads),
+            "sample": leads[0] if leads else {}
+        }), 200
+        
+    except Exception as e:
+        app.logger.error("Error in api_import_leads: %s", traceback.format_exc())
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 @app.route('/api/leads/<list_name>', methods=['GET'])
