@@ -4,7 +4,7 @@ import requests
 import base64
 from email.mime.text import MIMEText
 from app import supabase, aesgcm_decrypt, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-from datetime import datetime
+from datetime import datetime, timedelta 
 
 def get_gmail_access_token(enc_refresh_token):
     refresh_token = aesgcm_decrypt(enc_refresh_token)
