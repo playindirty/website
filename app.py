@@ -326,8 +326,8 @@ def api_import_leads():
         if 'email' not in csv_input.fieldnames:
             return jsonify({"error": "CSV must contain an 'email' column"}), 400
         
-        # Process rows
-        leads = []
+        # Process rows and remove duplicates
+        leads_dict = {}  # Use dictionary to track unique emails
         for row in csv_input:
             if not row.get('email'):
                 continue
@@ -338,8 +338,16 @@ def api_import_leads():
                 if value is not None:
                     cleaned_row[key.strip().lower()] = value.strip()
             
+            email = cleaned_row.get('email', '').lower()
+            
+            # Skip if email is invalid
+            try:
+                validate_email(email)
+            except EmailNotValidError:
+                continue
+            
             lead_data = {
-                "email": cleaned_row.get('email', '').lower(),
+                "email": email,
                 "name": cleaned_row.get('name', ''),
                 "last_name": cleaned_row.get('last_name', cleaned_row.get('last name', '')),
                 "city": cleaned_row.get('city', ''),
@@ -349,12 +357,10 @@ def api_import_leads():
                 "custom_fields": {k: v for k, v in cleaned_row.items() if k not in ['email', 'name', 'last_name', 'last name', 'city', 'brokerage', 'service', 'list_name']}
             }
             
-            # Validate email
-            try:
-                validate_email(lead_data['email'])
-                leads.append(lead_data)
-            except EmailNotValidError:
-                continue
+            # Keep only the last occurrence of each email
+            leads_dict[email] = lead_data
+        
+        leads = list(leads_dict.values())
         
         # Store in database
         if leads:
