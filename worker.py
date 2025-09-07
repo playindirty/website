@@ -123,12 +123,13 @@ def send_queued():
             }, json=message)
 
             if resp.status_code == 200:
-                # Mark as sent
-                supabase.table("email_queue").update({
+                # Mark as sent (now including sent_from field)
+                update_data = {
                     "sent_at": datetime.utcnow().isoformat(),
                     "message_id": resp.json().get("id"),
-                    "sent_from": account["email"]  # Track which account sent this
-                }).match({"id": q["id"]}).execute()
+                    "sent_from": account["email"]  # This is the key addition
+                }
+                supabase.table("email_queue").update(update_data).match({"id": q["id"]}).execute()
                 
                 # Update daily count
                 update_daily_count(account["email"], current_count + 1)
