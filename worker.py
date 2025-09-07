@@ -4,7 +4,7 @@ import requests
 import base64
 from email.mime.text import MIMEText
 from app import supabase, aesgcm_decrypt, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-from datetime import datetime, timedelta 
+from datetime import datetime, timedelta, date
 
 def get_gmail_access_token(enc_refresh_token):
     refresh_token = aesgcm_decrypt(enc_refresh_token)
@@ -27,23 +27,68 @@ def build_email_message(sender, to, subject, html_body):
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
     return {"raw": raw}
 
+def get_account_with_capacity():
+    """Get a Gmail account that hasn't reached its daily limit"""
+    today = date.today().isoformat()
+    
+    # Get all accounts with their daily counts
+    accounts = supabase.table("gmail_accounts").select("*").execute()
+    
+    for account in accounts.data:
+        # Get today's count for this account
+        count_data = supabase.table("daily_email_counts") \
+            .select("count") \
+            .eq("gmail_account", account["email"]) \
+            .eq("date", today) \
+            .execute()
+        
+        if count_data.data:
+            count = count_data.data[0]["count"]
+        else:
+            count = 0
+            
+        # If under limit, return this account
+        if count < 50:
+            return account, count
+            
+    return None, 0  # No accounts available
+
+def update_daily_count(gmail_account, count):
+    """Update the daily count for an account"""
+    today = date.today().isoformat()
+    
+    # Check if record exists
+    existing = supabase.table("daily_email_counts") \
+        .select("id") \
+        .eq("gmail_account", gmail_account) \
+        .eq("date", today) \
+        .execute()
+    
+    if existing.data:
+        # Update existing record
+        supabase.table("daily_email_counts") \
+            .update({"count": count}) \
+            .eq("gmail_account", gmail_account) \
+            .eq("date", today) \
+            .execute()
+    else:
+        # Create new record
+        supabase.table("daily_email_counts") \
+            .insert({
+                "gmail_account": gmail_account,
+                "date": today,
+                "count": count
+            }) \
+            .execute()
+
 def send_queued():
-    # Check if we have a Gmail account connected
-    gmail_acc = supabase.table("gmail_accounts").select("*").limit(1).execute()
-    if not gmail_acc.data:
-        print("No Gmail account connected.")
-        return
-
-    gmail_acc = gmail_acc.data[0]
-    access_token = get_gmail_access_token(gmail_acc["encrypted_refresh_token"])
-
     # Get queued emails that are scheduled for now or earlier
     queued = (
         supabase.table("email_queue")
         .select("*")
         .is_("sent_at", "null")
         .lte("scheduled_for", datetime.utcnow().isoformat())
-        .limit(50)
+        .limit(100)  # Increased limit to handle multiple accounts
         .execute()
     )
 
@@ -55,9 +100,17 @@ def send_queued():
     failed_count = 0
     
     for q in queued.data:
+        # Get an account with capacity
+        account, current_count = get_account_with_capacity()
+        if not account:
+            print("All accounts have reached their daily limit (50 emails).")
+            break
+            
         try:
+            access_token = get_gmail_access_token(account["encrypted_refresh_token"])
+
             message = build_email_message(
-                sender=gmail_acc["email"],
+                sender=account["email"],
                 to=q["lead_email"],
                 subject=q["subject"],
                 html_body=q["body"]
@@ -73,8 +126,12 @@ def send_queued():
                 # Mark as sent
                 supabase.table("email_queue").update({
                     "sent_at": datetime.utcnow().isoformat(),
-                    "message_id": resp.json().get("id")
+                    "message_id": resp.json().get("id"),
+                    "sent_from": account["email"]  # Track which account sent this
                 }).match({"id": q["id"]}).execute()
+                
+                # Update daily count
+                update_daily_count(account["email"], current_count + 1)
                 
                 # If this is an initial email (sequence 0), schedule the first follow-up
                 if q["sequence"] == 0:
