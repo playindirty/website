@@ -386,7 +386,39 @@ def api_get_leads_by_list(list_name):
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
-# Update the api_import_leads function to handle list_name
+# Add to app.py
+@app.route('/api/account-status', methods=['GET'])
+def api_get_account_status():
+    try:
+        today = date.today().isoformat()
+        
+        # Get all accounts with their daily counts
+        accounts = supabase.table("gmail_accounts").select("*").execute()
+        
+        statuses = []
+        for account in accounts.data:
+            # Get today's count for this account
+            count_data = supabase.table("daily_email_counts") \
+                .select("count") \
+                .eq("gmail_account", account["email"]) \
+                .eq("date", today) \
+                .execute()
+            
+            if count_data.data:
+                count = count_data.data[0]["count"]
+            else:
+                count = 0
+                
+            statuses.append({
+                "email": account["email"],
+                "display_name": account["display_name"],
+                "sent_today": count,
+                "remaining_today": 50 - count
+            })
+        
+        return jsonify({"ok": True, "accounts": statuses}), 200
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 
 
