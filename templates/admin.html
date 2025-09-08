@@ -463,62 +463,79 @@ Your Name
     }
     
     async function addSmtpAccount() {
-      const email = document.getElementById('smtpEmail').value;
-      const displayName = document.getElementById('smtpDisplayName').value;
-      const host = document.getElementById('smtpHost').value;
-      const port = document.getElementById('smtpPort').value;
-      const username = document.getElementById('smtpUsername').value;
-      const password = document.getElementById('smtpPassword').value;
-      const imapHost = document.getElementById('imapHost').value;
-      const imapPort = document.getElementById('imapPort').value;
-      const status = document.getElementById('smtpStatus');
+  const email = document.getElementById('smtpEmail').value;
+  const displayName = document.getElementById('smtpDisplayName').value;
+  const host = document.getElementById('smtpHost').value;
+  const port = document.getElementById('smtpPort').value;
+  const username = document.getElementById('smtpUsername').value;
+  const password = document.getElementById('smtpPassword').value;
+  const imapHost = document.getElementById('imapHost').value;
+  const imapPort = document.getElementById('imapPort').value;
+  const status = document.getElementById('smtpStatus');
+  
+  if (!email || !host || !port || !username || !password) {
+    status.innerText = 'Please fill all required fields (email, host, port, username, password)';
+    return;
+  }
+  
+  // Validate port numbers
+  if (isNaN(port) || port <= 0 || port > 65535) {
+    status.innerText = 'SMTP port must be a valid port number (1-65535)';
+    return;
+  }
+  
+  if (imapPort && (isNaN(imapPort) || imapPort <= 0 || imapPort > 65535)) {
+    status.innerText = 'IMAP port must be a valid port number (1-65535)';
+    return;
+  }
+  
+  status.innerText = 'Adding account...';
+  
+  try {
+    const requestBody = {
+      email: email,
+      display_name: displayName || email,
+      smtp_host: host,
+      smtp_port: parseInt(port),
+      smtp_username: username,
+      smtp_password: password
+    };
+    
+    // Only add IMAP fields if provided
+    if (imapHost) requestBody.imap_host = imapHost;
+    if (imapPort) requestBody.imap_port = parseInt(imapPort);
+    
+    const response = await fetch('/api/smtp-accounts', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      status.innerText = 'SMTP account added successfully!';
+      // Clear form
+      document.getElementById('smtpEmail').value = '';
+      document.getElementById('smtpDisplayName').value = '';
+      document.getElementById('smtpHost').value = '';
+      document.getElementById('smtpPort').value = '587';
+      document.getElementById('smtpUsername').value = '';
+      document.getElementById('smtpPassword').value = '';
+      document.getElementById('imapHost').value = '';
+      document.getElementById('imapPort').value = '993';
       
-      if (!email || !host || !port || !username || !password) {
-        status.innerText = 'Please fill all required fields';
-        return;
-      }
-      
-      status.innerText = 'Adding account...';
-      
-      try {
-        const response = await fetch('/api/smtp-accounts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: email,
-            display_name: displayName,
-            smtp_host: host,
-            smtp_port: parseInt(port),
-            smtp_username: username,
-            smtp_password: password,
-            imap_host: imapHost,
-            imap_port: imapPort ? parseInt(imapPort) : null
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-          status.innerText = 'SMTP account added successfully!';
-          // Clear form
-          document.getElementById('smtpEmail').value = '';
-          document.getElementById('smtpDisplayName').value = '';
-          document.getElementById('smtpHost').value = '';
-          document.getElementById('smtpPort').value = '587';
-          document.getElementById('smtpUsername').value = '';
-          document.getElementById('smtpPassword').value = '';
-          document.getElementById('imapHost').value = '';
-          document.getElementById('imapPort').value = '993';
-          
-          loadSmtpAccounts();
-        } else {
-          status.innerText = `Error: ${data.error}`;
-        }
-      } catch (error) {
-        status.innerText = 'Error adding SMTP account';
-        console.error('SMTP account error:', error);
-      }
+      loadSmtpAccounts();
+    } else {
+      status.innerText = `Error: ${data.error || 'Unknown error'} - ${data.detail || 'No details provided'}`;
     }
+  } catch (error) {
+    status.innerText = 'Error adding SMTP account: ' + error.message;
+    console.error('SMTP account error:', error);
+  }
+}
     
     async function testSmtpAccount(accountId) {
       alert(`Testing SMTP account ${accountId} functionality would be implemented here`);
