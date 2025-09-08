@@ -182,13 +182,18 @@ def send_queued():
     print(f"✅ Sent {sent_count} emails. Failed: {failed_count}")
 
 def render_email_template(template, lead_data):
-    """Replace template variables with lead data"""
+    """Replace template variables with lead data and preserve whitespace"""
     rendered = template
     for key, value in lead_data.items():
         if value is None:
             value = ""
         placeholder = "{" + key + "}"
         rendered = rendered.replace(placeholder, str(value))
+    
+    # Preserve line breaks and spaces by converting them to HTML
+    rendered = rendered.replace('\n', '<br>')
+    rendered = rendered.replace('  ', '&nbsp;&nbsp;')
+    
     return rendered
 
 if __name__ == "__main__":
