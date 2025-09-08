@@ -69,79 +69,86 @@ def index():
 def admin():
     return render_template('admin.html')
 
-@app.route('/auth/google/connect')
-def auth_google_connect():
-    scope = [
-        "https://www.googleapis.com/auth/gmail.send",
-        "openid",
-        "email",
-        "profile"
-    ]
-    params = {
-        "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": OAUTH_REDIRECT_URI,
-        "response_type": "code",
-        "scope": " ".join(scope),
-        "access_type": "offline",
-        "prompt": "consent"
-    }
-    url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
-    return redirect(url)
-
-@app.route('/auth/google/callback')
-def auth_google_callback():
+# Remove Google OAuth routes and add SMTP account routes
+@app.route('/api/smtp-accounts', methods=['GET'])
+def api_get_smtp_accounts():
     try:
-        code = request.args.get('code')
-        if not code:
-            return "Missing code", 400
+        accounts = supabase.table("smtp_accounts").select("*").execute()
+        return jsonify({"ok": True, "accounts": accounts.data}), 200
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
-        token_url = "https://oauth2.googleapis.com/token"
-        data = {
-            "code": code,
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uri": OAUTH_REDIRECT_URI,
-            "grant_type": "authorization_code"
+@app.route('/api/smtp-accounts', methods=['POST'])
+def api_add_smtp_account():
+    try:
+        data = request.get_json(force=True)
+        
+        # Test SMTP connection first
+        try:
+            smtp = smtplib.SMTP(data['smtp_host'], data['smtp_port'])
+            smtp.starttls()  # Use TLS for security
+            smtp.login(data['smtp_username'], data['smtp_password'])
+            smtp.quit()
+        except Exception as e:
+            return jsonify({"error": "smtp_connection_failed", "detail": str(e)}), 400
+        
+        # Encrypt password before storing
+        encrypted_password = aesgcm_encrypt(data['smtp_password'])
+        
+        # Store account details
+        account_data = {
+            "email": data['email'],
+            "display_name": data.get('display_name', data['email']),
+            "smtp_host": data['smtp_host'],
+            "smtp_port": data['smtp_port'],
+            "smtp_username": data['smtp_username'],
+            "encrypted_smtp_password": encrypted_password,
+            "imap_host": data.get('imap_host'),
+            "imap_port": data.get('imap_port')
         }
-        r = requests.post(token_url, data=data)
-        if r.status_code != 200:
-            app.logger.error("Token exchange failed: %s", r.text)
-            return f"token exchange error: {r.text}", 500
+        
+        result = supabase.table("smtp_accounts").insert(account_data).execute()
+        if getattr(result, "error", None):
+            return jsonify({"error": "db_error", "detail": str(result.error)}), 500
+        
+        return jsonify({"ok": True, "account": result.data[0]}), 200
+        
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
-        tokens = r.json()
-        refresh_token = tokens.get('refresh_token')
-        access_token = tokens.get('access_token')
-
-        if not refresh_token:
-            return "No refresh token returned. Try reconnecting with prompt=consent.", 400
-
-        whoami = requests.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"}
-        )
-        if whoami.status_code != 200:
-            return "failed to fetch userinfo", 500
-
-        profile = whoami.json()
-        email = profile.get('email')
-        display_name = profile.get('name') or email
-
-        enc = aesgcm_encrypt(refresh_token)
-        payload = {
-            "email": email,
-            "display_name": display_name,
-            "encrypted_refresh_token": enc,
-            "scopes": tokens.get('scope', "").split(" ")
-        }
-
-        res = supabase.table("gmail_accounts").upsert(payload, on_conflict=["email"]).execute()
-        if getattr(res, "error", None):
-            return "DB error storing Gmail account", 500
-
-        return f"Connected {email} — you can close this window."
-    except Exception:
-        app.logger.error("Unhandled exception:\n%s", traceback.format_exc())
-        return "Internal server error", 500
+# Update the account status endpoint to use SMTP accounts
+@app.route('/api/account-status', methods=['GET'])
+def api_get_account_status():
+    try:
+        today = date.today().isoformat()
+        
+        # Get all SMTP accounts with their daily counts
+        accounts = supabase.table("smtp_accounts").select("*").execute()
+        
+        statuses = []
+        for account in accounts.data:
+            # Get today's count for this account
+            count_data = supabase.table("daily_email_counts") \
+                .select("count") \
+                .eq("email_account", account["email"]) \
+                .eq("date", today) \
+                .execute()
+            
+            if count_data.data:
+                count = count_data.data[0]["count"]
+            else:
+                count = 0
+                
+            statuses.append({
+                "email": account["email"],
+                "display_name": account["display_name"],
+                "sent_today": count,
+                "remaining_today": 50 - count
+            })
+        
+        return jsonify({"ok": True, "accounts": statuses}), 200
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 
 
