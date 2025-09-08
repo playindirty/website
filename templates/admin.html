@@ -20,10 +20,11 @@
     .tab-button.active{background:#1f2937;color:white}
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px;text-align:left;border-bottom:1px solid #e5e7eb}
-    pre {
-    white-space: pre-wrap;
-    font-family: monospace;
-  }
+    .account-status {display: flex; align-items: center; margin-bottom: 10px;}
+    .status-indicator {width: 12px; height: 12px; border-radius: 50%; margin-right: 10px;}
+    .status-good {background-color: #10B981;}
+    .status-warning {background-color: #F59E0B;}
+    .status-error {background-color: #EF4444;}
   </style>
 </head>
 <body>
@@ -34,7 +35,8 @@
       <div class="tab-button active" onclick="showTab('import')">Import Leads</div>
       <div class="tab-button" onclick="showTab('campaigns')">Campaigns</div>
       <div class="tab-button" onclick="showTab('templates')">Templates</div>
-      <div class="tab-button" onclick="showTab('connect')">Connect Gmail</div>
+      <div class="tab-button" onclick="showTab('smtp')">SMTP Accounts</div>
+      <div class="tab-button" onclick="showTab('status')">Account Status</div>
     </div>
     
     <!-- Import Leads Tab -->
@@ -63,13 +65,7 @@
           <option value="">Select a list</option>
         </select>
         <input id="campaignSubject" placeholder="Email subject (use {name}, {city}, etc.)">
-        <!-- Update the email body textarea -->
-<textarea id="campaignBody" 
-          placeholder="Email body (HTML with variables like {name}, {city}, {brokerage}, {service})" 
-          rows="8"
-          style="font-family: monospace; white-space: pre-wrap;"></textarea>
-
-
+        <textarea id="campaignBody" placeholder="Email body (HTML with variables like {name}, {city}, {brokerage}, {service})" rows="8"></textarea>
         
         <div class="section">
           <h4>Follow-up Emails</h4>
@@ -77,11 +73,7 @@
             <div class="followup-section">
               <input class="followup-days" type="number" placeholder="Days after previous" value="2" min="1">
               <input class="followup-subject" placeholder="Follow-up subject">
-              <!-- Update the follow-up body textareas -->
-<textarea class="followup-body" 
-          placeholder="Follow-up body" 
-          rows="4"
-          style="font-family: monospace; white-space: pre-wrap;"></textarea>
+              <textarea class="followup-body" placeholder="Follow-up body" rows="4"></textarea>
             </div>
           </div>
           <button onclick="addFollowup()">+ Add Follow-up</button>
@@ -110,20 +102,43 @@
       </div>
     </div>
     
-    <!-- Connect Gmail Tab -->
-    <div id="connect" class="tab">
+    <!-- SMTP Accounts Tab -->
+    <div id="smtp" class="tab">
       <div class="card">
-        <h3>Connect Gmail account</h3>
-        <p>Click to add a sending Gmail account (admin only).</p>
-        <a href="/auth/google/connect"><button>Connect Gmail</button></a>
+        <h3>Add SMTP Account</h3>
+        <input type="email" id="smtpEmail" placeholder="Email address">
+        <input type="text" id="smtpDisplayName" placeholder="Display name">
+        <input type="text" id="smtpHost" placeholder="SMTP Host (e.g., smtp.gmail.com)">
+        <input type="number" id="smtpPort" placeholder="SMTP Port (e.g., 587)" value="587">
+        <input type="text" id="smtpUsername" placeholder="SMTP Username (usually your email)">
+        <input type="password" id="smtpPassword" placeholder="SMTP Password">
+        <input type="text" id="imapHost" placeholder="IMAP Host (optional)">
+        <input type="number" id="imapPort" placeholder="IMAP Port (optional)" value="993">
+        <button onclick="addSmtpAccount()">Add SMTP Account</button>
+        <div id="smtpStatus"></div>
+      </div>
+      
+      <div class="card">
+        <h3>Existing SMTP Accounts</h3>
+        <div id="smtpAccountsContainer">Loading...</div>
+      </div>
+    </div>
+    
+    <!-- Account Status Tab -->
+    <div id="status" class="tab">
+      <div class="card">
+        <h3>Account Sending Status</h3>
+        <p>Daily limit: 50 emails per account</p>
+        <div id="accountStatusContainer">Loading...</div>
       </div>
     </div>
   </div>
 
-  
-    <script>
+  <script>
     let currentLists = [];
     let currentCampaigns = [];
+    let smtpAccounts = [];
+    let accountStatuses = [];
     
     function showTab(tabName) {
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -138,6 +153,10 @@
         loadLists();
       } else if (tabName === 'templates') {
         loadTemplates();
+      } else if (tabName === 'smtp') {
+        loadSmtpAccounts();
+      } else if (tabName === 'status') {
+        loadAccountStatus();
       }
     }
     
@@ -405,6 +424,148 @@ Your Name
           </pre>
         </div>
       `;
+    }
+    
+    async function loadSmtpAccounts() {
+      try {
+        const response = await fetch('/api/smtp-accounts');
+        if (response.ok) {
+          const data = await response.json();
+          smtpAccounts = data.accounts || [];
+          renderSmtpAccounts();
+        }
+      } catch (error) {
+        console.error('Error loading SMTP accounts:', error);
+      }
+    }
+    
+    function renderSmtpAccounts() {
+      const container = document.getElementById('smtpAccountsContainer');
+      if (smtpAccounts.length === 0) {
+        container.innerHTML = '<p>No SMTP accounts yet. Add your first account above.</p>';
+        return;
+      }
+      
+      let html = '<table><tr><th>Email</th><th>Display Name</th><th>SMTP Host</th><th>Actions</th></tr>';
+      smtpAccounts.forEach(account => {
+        html += `<tr>
+          <td>${account.email}</td>
+          <td>${account.display_name}</td>
+          <td>${account.smtp_host}:${account.smtp_port}</td>
+          <td>
+            <button onclick="testSmtpAccount(${account.id})">Test</button>
+            <button onclick="deleteSmtpAccount(${account.id})">Delete</button>
+          </td>
+        </tr>`;
+      });
+      html += '</table>';
+      container.innerHTML = html;
+    }
+    
+    async function addSmtpAccount() {
+      const email = document.getElementById('smtpEmail').value;
+      const displayName = document.getElementById('smtpDisplayName').value;
+      const host = document.getElementById('smtpHost').value;
+      const port = document.getElementById('smtpPort').value;
+      const username = document.getElementById('smtpUsername').value;
+      const password = document.getElementById('smtpPassword').value;
+      const imapHost = document.getElementById('imapHost').value;
+      const imapPort = document.getElementById('imapPort').value;
+      const status = document.getElementById('smtpStatus');
+      
+      if (!email || !host || !port || !username || !password) {
+        status.innerText = 'Please fill all required fields';
+        return;
+      }
+      
+      status.innerText = 'Adding account...';
+      
+      try {
+        const response = await fetch('/api/smtp-accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email,
+            display_name: displayName,
+            smtp_host: host,
+            smtp_port: parseInt(port),
+            smtp_username: username,
+            smtp_password: password,
+            imap_host: imapHost,
+            imap_port: imapPort ? parseInt(imapPort) : null
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          status.innerText = 'SMTP account added successfully!';
+          // Clear form
+          document.getElementById('smtpEmail').value = '';
+          document.getElementById('smtpDisplayName').value = '';
+          document.getElementById('smtpHost').value = '';
+          document.getElementById('smtpPort').value = '587';
+          document.getElementById('smtpUsername').value = '';
+          document.getElementById('smtpPassword').value = '';
+          document.getElementById('imapHost').value = '';
+          document.getElementById('imapPort').value = '993';
+          
+          loadSmtpAccounts();
+        } else {
+          status.innerText = `Error: ${data.error}`;
+        }
+      } catch (error) {
+        status.innerText = 'Error adding SMTP account';
+        console.error('SMTP account error:', error);
+      }
+    }
+    
+    async function testSmtpAccount(accountId) {
+      alert(`Testing SMTP account ${accountId} functionality would be implemented here`);
+      // In a real implementation, you'd call a test endpoint
+    }
+    
+    async function deleteSmtpAccount(accountId) {
+      if (confirm('Are you sure you want to delete this SMTP account?')) {
+        alert(`Deleting SMTP account ${accountId} functionality would be implemented here`);
+        // In a real implementation, you'd call a delete endpoint
+      }
+    }
+    
+    async function loadAccountStatus() {
+      try {
+        const response = await fetch('/api/account-status');
+        if (response.ok) {
+          const data = await response.json();
+          accountStatuses = data.accounts || [];
+          renderAccountStatus();
+        }
+      } catch (error) {
+        console.error('Error loading account status:', error);
+      }
+    }
+    
+    function renderAccountStatus() {
+      const container = document.getElementById('accountStatusContainer');
+      if (accountStatuses.length === 0) {
+        container.innerHTML = '<p>No accounts found.</p>';
+        return;
+      }
+      
+      let html = '<table><tr><th>Account</th><th>Sent Today</th><th>Remaining</th><th>Status</th></tr>';
+      accountStatuses.forEach(account => {
+        const statusClass = account.remaining_today > 10 ? 'status-good' : 
+                           account.remaining_today > 0 ? 'status-warning' : 'status-error';
+        
+        html += `<tr>
+          <td>${account.display_name} (${account.email})</td>
+          <td>${account.sent_today}</td>
+          <td>${account.remaining_today}</td>
+          <td><div class="account-status"><div class="status-indicator ${statusClass}"></div> ${account.remaining_today > 0 ? 'Active' : 'Limit Reached'}</div></td>
+        </tr>`;
+      });
+      html += '</table>';
+      container.innerHTML = html;
     }
     
     // Initial load
