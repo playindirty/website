@@ -7,29 +7,35 @@ from datetime import datetime, timedelta, date
 
 def send_email_via_smtp(account, to_email, subject, html_body):
     """Send email using SMTP"""
-    # Decrypt SMTP password
-    smtp_password = aesgcm_decrypt(account["encrypted_smtp_password"])
-    
-    # Create message
-    msg = MIMEText(html_body, "html")
-    msg["Subject"] = subject
-    msg["From"] = f"{account['display_name']} <{account['email']}>"
-    msg["To"] = to_email
-    
-    # Send email
-    smtp = smtplib.SMTP(account["smtp_host"], account["smtp_port"])
-    smtp.starttls()  # Use TLS
-    smtp.login(account["smtp_username"], smtp_password)
-    smtp.send_message(msg)
-    smtp.quit()
+    try:
+        # Decrypt SMTP password
+        smtp_password = aesgcm_decrypt(account["encrypted_smtp_password"])
+        
+        # Create message
+        msg = MIMEText(html_body, "html")
+        msg["Subject"] = subject
+        msg["From"] = f"{account['display_name']} <{account['email']}>"
+        msg["To"] = to_email
+        
+        # Send email
+        smtp = smtplib.SMTP(account["smtp_host"], account["smtp_port"])
+        smtp.starttls()  # Use TLS
+        smtp.login(account["smtp_username"], smtp_password)
+        smtp.send_message(msg)
+        smtp.quit()
+        return True
+    except Exception as e:
+        print(f"Error sending email via SMTP: {str(e)}")
+        return False
 
-def get_account_with_capacity():
-    """Get an SMTP account that hasn't reached its daily limit"""
+def get_all_accounts_with_capacity():
+    """Get all SMTP accounts with their current usage and capacity"""
     today = date.today().isoformat()
     
-    # Get all accounts with their daily counts
+    # Get all accounts
     accounts = supabase.table("smtp_accounts").select("*").execute()
     
+    accounts_with_capacity = []
     for account in accounts.data:
         # Get today's count for this account
         count_data = supabase.table("daily_email_counts") \
@@ -43,11 +49,19 @@ def get_account_with_capacity():
         else:
             count = 0
             
-        # If under limit, return this account
-        if count < 50:
-            return account, count
-            
-    return None, 0  # No accounts available
+        # Calculate remaining capacity
+        remaining = 50 - count
+        
+        if remaining > 0:
+            accounts_with_capacity.append({
+                "account": account,
+                "sent_today": count,
+                "remaining": remaining
+            })
+    
+    # Sort by remaining capacity (descending) to prioritize accounts with most capacity
+    accounts_with_capacity.sort(key=lambda x: x["remaining"], reverse=True)
+    return accounts_with_capacity
 
 def update_daily_count(email_account, count):
     """Update the daily count for an account"""
@@ -84,7 +98,7 @@ def send_queued():
         .select("*")
         .is_("sent_at", "null")
         .lte("scheduled_for", datetime.utcnow().isoformat())
-        .limit(100)
+        .limit(200)  # Increased limit to handle more accounts
         .execute()
     )
 
@@ -92,77 +106,117 @@ def send_queued():
         print("No queued emails ready to send.")
         return
 
+    # Get all accounts with capacity
+    available_accounts = get_all_accounts_with_capacity()
+    
+    if not available_accounts:
+        print("All accounts have reached their daily limit (50 emails).")
+        return
+        
+    print(f"Found {len(available_accounts)} accounts with capacity")
+    
     sent_count = 0
     failed_count = 0
     
+    # Distribute emails across available accounts
+    account_index = 0
+    total_accounts = len(available_accounts)
+    
     for q in queued.data:
-        # Get an account with capacity
-        account, current_count = get_account_with_capacity()
-        if not account:
-            print("All accounts have reached their daily limit (50 emails).")
-            break
+        if account_index >= total_accounts:
+            account_index = 0
             
+        account_data = available_accounts[account_index]
+        account = account_data["account"]
+        current_count = account_data["sent_today"]
+        
         try:
-            send_email_via_smtp(
+            success = send_email_via_smtp(
                 account=account,
                 to_email=q["lead_email"],
                 subject=q["subject"],
                 html_body=q["body"]
             )
 
-            # Mark as sent
-            update_data = {
-                "sent_at": datetime.utcnow().isoformat(),
-                "sent_from": account["email"]
-            }
-            supabase.table("email_queue").update(update_data).match({"id": q["id"]}).execute()
-            
-            # Update daily count
-            update_daily_count(account["email"], current_count + 1)
-            
-            # If this is an initial email (sequence 0), schedule the first follow-up
-            if q["sequence"] == 0:
-                # Get the first follow-up for this campaign
-                follow_up = (
-                    supabase.table("campaign_followups")
-                    .select("*")
-                    .eq("campaign_id", q["campaign_id"])
-                    .eq("sequence", 1)
-                    .execute()
-                )
+            if success:
+                # Mark as sent
+                update_data = {
+                    "sent_at": datetime.utcnow().isoformat(),
+                    "sent_from": account["email"]
+                }
+                supabase.table("email_queue").update(update_data).match({"id": q["id"]}).execute()
                 
-                if follow_up.data:
-                    follow_up = follow_up.data[0]
-                    # Get lead data
-                    lead = supabase.table("leads").select("*").eq("id", q["lead_id"]).single().execute()
-                    
-                    if lead.data:
-                        # Calculate send date
-                        days_delay = follow_up["days_after_previous"]
-                        send_date = datetime.utcnow() + timedelta(days=days_delay)
-                        
-                        # Render template with lead data
-                        rendered_subject = render_email_template(follow_up["subject"], lead.data)
-                        rendered_body = render_email_template(follow_up["body"], lead.data)
-                        
-                        # Queue follow-up
-                        supabase.table("email_queue").insert({
-                            "campaign_id": q["campaign_id"],
-                            "lead_id": q["lead_id"],
-                            "lead_email": q["lead_email"],
-                            "subject": rendered_subject,
-                            "body": rendered_body,
-                            "sequence": 1,
-                            "scheduled_for": send_date.isoformat()
-                        }).execute()
-            
-            sent_count += 1
+                # Update daily count for this account
+                new_count = current_count + 1
+                update_daily_count(account["email"], new_count)
+                available_accounts[account_index]["sent_today"] = new_count
+                available_accounts[account_index]["remaining"] = 50 - new_count
+                
+                # If this account is now at capacity, remove it from available accounts
+                if new_count >= 50:
+                    available_accounts.pop(account_index)
+                    total_accounts = len(available_accounts)
+                    if total_accounts == 0:
+                        print("All accounts have reached their daily limit.")
+                        break
+                    # Adjust index if we removed the current account
+                    if account_index >= total_accounts:
+                        account_index = 0
+                else:
+                    account_index += 1
+                
+                # If this is an initial email (sequence 0), schedule the first follow-up
+                if q["sequence"] == 0:
+                    schedule_followup(q, 1)
+                
+                sent_count += 1
+            else:
+                print(f"Failed to send to {q['lead_email']}")
+                failed_count += 1
+                account_index += 1  # Move to next account even on failure
                 
         except Exception as e:
             print(f"Error sending email to {q['lead_email']}: {str(e)}")
             failed_count += 1
+            account_index += 1  # Move to next account on error
 
     print(f"✅ Sent {sent_count} emails. Failed: {failed_count}")
+
+def schedule_followup(q, sequence):
+    """Schedule a follow-up email"""
+    # Get the follow-up for this campaign and sequence
+    follow_up = (
+        supabase.table("campaign_followups")
+        .select("*")
+        .eq("campaign_id", q["campaign_id"])
+        .eq("sequence", sequence)
+        .execute()
+    )
+    
+    if follow_up.data:
+        follow_up = follow_up.data[0]
+        # Get lead data
+        lead = supabase.table("leads").select("*").eq("id", q["lead_id"]).single().execute()
+        
+        if lead.data:
+            # Calculate send date
+            days_delay = follow_up["days_after_previous"]
+            send_date = datetime.utcnow() + timedelta(days=days_delay)
+            
+            # Render template with lead data
+            rendered_subject = render_email_template(follow_up["subject"], lead.data)
+            rendered_body = render_email_template(follow_up["body"], lead.data)
+            
+            # Queue follow-up
+            supabase.table("email_queue").insert({
+                "campaign_id": q["campaign_id"],
+                "lead_id": q["lead_id"],
+                "lead_email": q["lead_email"],
+                "subject": rendered_subject,
+                "body": rendered_body,
+                "sequence": sequence,
+                "scheduled_for": send_date.isoformat()
+            }).execute()
 
 def render_email_template(template, lead_data):
     """Replace template variables with lead data"""
