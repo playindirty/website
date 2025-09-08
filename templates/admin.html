@@ -59,7 +59,13 @@
           <option value="">Select a list</option>
         </select>
         <input id="campaignSubject" placeholder="Email subject (use {name}, {city}, etc.)">
-        <textarea id="campaignBody" placeholder="Email body (HTML with variables like {name}, {city}, {brokerage}, {service})" rows="8"></textarea>
+        <!-- Update the email body textarea -->
+<textarea id="campaignBody" 
+          placeholder="Email body (HTML with variables like {name}, {city}, {brokerage}, {service})" 
+          rows="8"
+          style="font-family: monospace; white-space: pre-wrap;"></textarea>
+
+
         
         <div class="section">
           <h4>Follow-up Emails</h4>
@@ -67,7 +73,11 @@
             <div class="followup-section">
               <input class="followup-days" type="number" placeholder="Days after previous" value="2" min="1">
               <input class="followup-subject" placeholder="Follow-up subject">
-              <textarea class="followup-body" placeholder="Follow-up body" rows="4"></textarea>
+              <!-- Update the follow-up body textareas -->
+<textarea class="followup-body" 
+          placeholder="Follow-up body" 
+          rows="4"
+          style="font-family: monospace; white-space: pre-wrap;"></textarea>
             </div>
           </div>
           <button onclick="addFollowup()">+ Add Follow-up</button>
