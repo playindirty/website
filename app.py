@@ -410,7 +410,43 @@ def api_get_leads_by_list(list_name):
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
-
+@app.route('/api/smtp-accounts', methods=['POST'])
+def api_add_smtp_account():
+    try:
+        data = request.get_json(force=True)
+        
+        # Test SMTP connection first
+        try:
+            smtp = smtplib.SMTP(data['smtp_host'], data['smtp_port'])
+            smtp.starttls()  # Use TLS for security
+            smtp.login(data['smtp_username'], data['smtp_password'])
+            smtp.quit()
+        except Exception as e:
+            return jsonify({"error": "smtp_connection_failed", "detail": str(e)}), 400
+        
+        # Encrypt password before storing
+        encrypted_password = aesgcm_encrypt(data['smtp_password'])
+        
+        # Store account details
+        account_data = {
+            "email": data['email'],
+            "display_name": data.get('display_name', data['email']),
+            "smtp_host": data['smtp_host'],
+            "smtp_port": data['smtp_port'],
+            "smtp_username": data['smtp_username'],
+            "encrypted_smtp_password": encrypted_password,
+            "imap_host": data.get('imap_host'),
+            "imap_port": data.get('imap_port')
+        }
+        
+        result = supabase.table("smtp_accounts").insert(account_data).execute()
+        if getattr(result, "error", None):
+            return jsonify({"error": "db_error", "detail": str(result.error)}), 500
+        
+        return jsonify({"ok": True, "account": result.data[0]}), 200
+        
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 
 
