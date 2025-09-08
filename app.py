@@ -7,6 +7,12 @@ import secrets
 import csv
 import io
 import requests
+import smtplib
+import imaplib
+import ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
 from datetime import datetime, timedelta
 from flask import Flask, request, redirect, render_template, jsonify, current_app
 from dotenv import load_dotenv
