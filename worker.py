@@ -28,6 +28,36 @@ def send_email_via_smtp(account, to_email, subject, html_body):
         print(f"Error sending email via SMTP: {str(e)}")
         return False
 
+def get_account_for_lead_campaign(lead_id, campaign_id):
+    """Get the assigned SMTP account for a lead/campaign combination"""
+    try:
+        # Check if we already have an account assigned for this lead/campaign
+        assignment = supabase.table("lead_campaign_accounts") \
+            .select("smtp_account") \
+            .eq("lead_id", lead_id) \
+            .eq("campaign_id", campaign_id) \
+            .execute()
+        
+        if assignment.data:
+            # Get the account details
+            account = supabase.table("smtp_accounts") \
+                .select("*") \
+                .eq("email", assignment.data[0]["smtp_account"]) \
+                .single() \
+                .execute()
+            return account.data
+        return None
+    except:
+        return None
+
+def assign_account_to_lead_campaign(lead_id, campaign_id, account_email):
+    """Assign an SMTP account to a lead/campaign combination"""
+    supabase.table("lead_campaign_accounts").upsert({
+        "lead_id": lead_id,
+        "campaign_id": campaign_id,
+        "smtp_account": account_email
+    }).execute()
+
 def get_all_accounts_with_capacity():
     """Get all SMTP accounts with their current usage and capacity"""
     today = date.today().isoformat()
@@ -98,7 +128,7 @@ def send_queued():
         .select("*")
         .is_("sent_at", "null")
         .lte("scheduled_for", datetime.utcnow().isoformat())
-        .limit(200)  # Increased limit to handle more accounts
+        .limit(200)
         .execute()
     )
 
@@ -123,12 +153,36 @@ def send_queued():
     total_accounts = len(available_accounts)
     
     for q in queued.data:
-        if account_index >= total_accounts:
-            account_index = 0
+        # Check if there's an assigned account for this lead/campaign
+        assigned_account = get_account_for_lead_campaign(q["lead_id"], q["campaign_id"])
+        
+        if assigned_account:
+            # Use the assigned account if it has capacity
+            account_found = None
+            for acc in available_accounts:
+                if acc["account"]["email"] == assigned_account["email"] and acc["remaining"] > 0:
+                    account_found = acc
+                    break
             
-        account_data = available_accounts[account_index]
-        account = account_data["account"]
-        current_count = account_data["sent_today"]
+            if account_found:
+                account_data = account_found
+                account = account_data["account"]
+                current_count = account_data["sent_today"]
+            else:
+                # Skip this email if the assigned account doesn't have capacity
+                print(f"Skipping email for {q['lead_email']} - assigned account has no capacity")
+                continue
+        else:
+            # Use round-robin for emails without an assigned account
+            if account_index >= total_accounts:
+                account_index = 0
+                
+            account_data = available_accounts[account_index]
+            account = account_data["account"]
+            current_count = account_data["sent_today"]
+            
+            # Assign this account to the lead/campaign for future emails
+            assign_account_to_lead_campaign(q["lead_id"], q["campaign_id"], account["email"])
         
         try:
             success = send_email_via_smtp(
@@ -149,8 +203,10 @@ def send_queued():
                 # Update daily count for this account
                 new_count = current_count + 1
                 update_daily_count(account["email"], new_count)
-                available_accounts[account_index]["sent_today"] = new_count
-                available_accounts[account_index]["remaining"] = 50 - new_count
+                
+                # Update our local count
+                account_data["sent_today"] = new_count
+                account_data["remaining"] = 50 - new_count
                 
                 # If this account is now at capacity, remove it from available accounts
                 if new_count >= 50:
@@ -167,7 +223,7 @@ def send_queued():
                 
                 # If this is an initial email (sequence 0), schedule the first follow-up
                 if q["sequence"] == 0:
-                    schedule_followup(q, 1)
+                    schedule_followup(q, 1, account["email"])
                 
                 sent_count += 1
             else:
@@ -182,8 +238,8 @@ def send_queued():
 
     print(f"✅ Sent {sent_count} emails. Failed: {failed_count}")
 
-def schedule_followup(q, sequence):
-    """Schedule a follow-up email"""
+def schedule_followup(q, sequence, account_email):
+    """Schedule a follow-up email using the same account"""
     # Get the follow-up for this campaign and sequence
     follow_up = (
         supabase.table("campaign_followups")
@@ -207,7 +263,7 @@ def schedule_followup(q, sequence):
             rendered_subject = render_email_template(follow_up["subject"], lead.data)
             rendered_body = render_email_template(follow_up["body"], lead.data)
             
-            # Queue follow-up
+            # Queue follow-up with the same account
             supabase.table("email_queue").insert({
                 "campaign_id": q["campaign_id"],
                 "lead_id": q["lead_id"],
