@@ -138,6 +138,34 @@
         <div id="accountStatusContainer">Loading...</div>
       </div>
     </div>
+<!--------------------------------------------------------------------->
+    <!-- Add this to your admin.html -->
+<div class="analytics-section">
+    <h2>Link Click Analytics</h2>
+    
+    <div class="campaign-selector">
+        <select id="campaignSelect">
+            <option value="">Select a campaign</option>
+            <!-- Options will be populated by JavaScript -->
+        </select>
+    </div>
+    
+    <div id="clickAnalytics">
+        <table>
+            <thead>
+                <tr>
+                    <th>Lead Email</th>
+                    <th>URL Clicked</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody id="clickData">
+                <!-- Data will be populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div> <!---------------------------------------->
+
     
     <!-- Responded Leads Tab -->
     <div id="responded" class="tab">
@@ -720,7 +748,48 @@ Your Name
       html += '</table>';
       container.innerHTML = html;
     }
+    // Add this JavaScript to your admin.html
+document.addEventListener('DOMContentLoaded', function() {
+    // Load campaigns for the dropdown
+    fetch('/api/campaigns')
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                const select = document.getElementById('campaignSelect');
+                data.campaigns.forEach(campaign => {
+                    const option = document.createElement('option');
+                    option.value = campaign.id;
+                    option.textContent = campaign.name;
+                    select.appendChild(option);
+                });
+            }
+        });
     
+    // Handle campaign selection change
+document.getElementById('campaignSelect').addEventListener('change', function() {
+        const campaignId = this.value;
+        if (campaignId) {
+            fetch(`/api/campaigns/${campaignId}/clicks`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ok) {
+                        const tbody = document.getElementById('clickData');
+                        tbody.innerHTML = '';
+                        
+                        data.clicks.forEach(click => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${click.leads?.email || 'Unknown'}</td>
+                                <td>${click.url}</td>
+                                <td>${new Date(click.clicked_at).toLocaleString()}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+                });
+        }
+    });
+});
     // Initial load
     loadLists();
   </script>
