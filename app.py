@@ -450,8 +450,25 @@ def track_click(lead_id, campaign_id):
             "email_queue_id": email_queue_id
         }).execute()
         
-        # Redirect to the original URL
-        return redirect(original_url)
+        # For internal links, use a meta refresh to avoid redirect loops
+        app_base_url = os.environ.get('APP_BASE_URL', 'http://localhost:5000')
+        if app_base_url in original_url:
+            # Use a meta refresh to redirect to the internal page
+            return f'''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta http-equiv="refresh" content="0; url={original_url}">
+                <title>Redirecting...</title>
+            </head>
+            <body>
+                <p>Redirecting to <a href="{original_url}">{original_url}</a></p>
+            </body>
+            </html>
+            '''
+        else:
+            # For external links, use a regular redirect
+            return redirect(original_url)
         
     except Exception as e:
         print(f"Error tracking click: {str(e)}")
