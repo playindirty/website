@@ -427,5 +427,63 @@ def api_get_responded_leads():
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
+# Update the route to use integer IDs
+@app.route('/track/<int:lead_id>/<int:campaign_id>')
+def track_click(lead_id, campaign_id):
+    try:
+        # Get the original URL from query parameters
+        url = request.args.get('url')
+        if not url:
+            return "URL parameter missing", 400
+            
+        # Decode the URL
+        original_url = urllib.parse.unquote(url)
+        
+        # Get the email_queue_id if available
+        email_queue_id = request.args.get('eqid', None)
+        
+        # Record the click in the database
+        supabase.table("link_clicks").insert({
+            "lead_id": lead_id,
+            "campaign_id": campaign_id,
+            "url": original_url,
+            "email_queue_id": email_queue_id
+        }).execute()
+        
+        # Redirect to the original URL
+        return redirect(original_url)
+        
+    except Exception as e:
+        print(f"Error tracking click: {str(e)}")
+        return "Error tracking click", 500
+
+import urllib.parse
+
+@app.route('/api/campaigns/<int:campaign_id>/clicks')
+def api_get_campaign_clicks(campaign_id):
+    try:
+        clicks = supabase.table("link_clicks") \
+            .select("*, leads(email, name)") \
+            .eq("campaign_id", campaign_id) \
+            .order("clicked_at", desc=True) \
+            .execute()
+        
+        return jsonify({"ok": True, "clicks": clicks.data}), 200
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
+
+@app.route('/api/leads/<int:lead_id>/clicks')
+def api_get_lead_clicks(lead_id):
+    try:
+        clicks = supabase.table("link_clicks") \
+            .select("*, campaigns(name)") \
+            .eq("lead_id", lead_id) \
+            .order("clicked_at", desc=True) \
+            .execute()
+        
+        return jsonify({"ok": True, "clicks": clicks.data}), 200
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
