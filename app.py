@@ -32,10 +32,6 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Encryption key (32 bytes hex)
 ENCRYPTION_KEY = bytes.fromhex(os.environ['ENCRYPTION_KEY'])
 
-GOOGLE_CLIENT_ID = os.environ['GOOGLE_CLIENT_ID']
-GOOGLE_CLIENT_SECRET = os.environ['GOOGLE_CLIENT_SECRET']
-OAUTH_REDIRECT_URI = os.environ['OAUTH_REDIRECT_URI']
-
 # ---------- Helpers ----------
 def aesgcm_encrypt(plaintext: str) -> str:
     aesgcm = AESGCM(ENCRYPTION_KEY)
