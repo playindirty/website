@@ -1,4 +1,4 @@
-name: Process Newsletter Queue
+name: Process Email Queue
 
 on:
   workflow_dispatch: # Allows manual run from GitHub Actions
@@ -6,7 +6,7 @@ on:
     - cron: "0 * * * *" # Every hour
 
 jobs:
-  send-newsletters:
+  send-emails:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -32,15 +32,31 @@ jobs:
           OAUTH_REDIRECT_URI : ${{ secrets.OAUTH_REDIRECT_URI }}
         run: python worker.py
 
+      - name: Check for replies
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: python check_replies.py
+
+  reset-counts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Reset daily email counts
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
-          OAUTH_REDIRECT_URI : ${{ secrets.OAUTH_REDIRECT_URI }}
         run: python reset_daily_counts.py
-
-        
