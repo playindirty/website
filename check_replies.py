@@ -1,9 +1,29 @@
 # check_replies.py
+import os
 import imaplib
 import email
 from email.header import decode_header
 from datetime import datetime, timedelta
-from app import supabase, aesgcm_decrypt
+import re
+import requests
+from supabase import create_client
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+# Initialize Supabase
+SUPABASE_URL = os.environ['SUPABASE_URL']
+SUPABASE_KEY = os.environ['SUPABASE_SERVICE_ROLE_KEY']
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Encryption functions
+ENCRYPTION_KEY = bytes.fromhex(os.environ['ENCRYPTION_KEY'])
+
+def aesgcm_decrypt(b64text: str) -> str:
+    data = base64.b64decode(b64text)
+    nonce = data[:12]
+    ct = data[12:]
+    aesgcm = AESGCM(ENCRYPTION_KEY)
+    pt = aesgcm.decrypt(nonce, ct, None)
+    return pt.decode('utf-8')
 
 def check_for_replies():
     # Get all SMTP accounts with IMAP configured
@@ -39,7 +59,6 @@ def check_for_replies():
                             from_email = msg.get("From")
                             
                             # Extract email address from the From field
-                            import re
                             email_match = re.search(r'<(.+?)>', from_email)
                             if email_match:
                                 from_email = email_match.group(1)
@@ -54,12 +73,26 @@ def check_for_replies():
                             
                             if lead.data:
                                 # Mark this lead as responded
-                                import requests
-                                requests.post(
-                                    "http://localhost:5000/api/leads/responded",
-                                    json={"lead_id": lead.data[0]['id']},
-                                    headers={"Content-Type": "application/json"}
-                                )
+                                supabase.table("responded_leads").insert({
+                                    "original_lead_id": lead.data[0]['id'],
+                                    "email": lead.data[0]['email'],
+                                    "name": lead.data[0]['name'],
+                                    "last_name": lead.data[0].get('last_name'),
+                                    "city": lead.data[0].get('city'),
+                                    "brokerage": lead.data[0].get('brokerage'),
+                                    "service": lead.data[0].get('service'),
+                                    "list_name": lead.data[0].get('list_name'),
+                                    "custom_fields": lead.data[0].get('custom_fields')
+                                }).execute()
+                                
+                                # Delete any queued emails for this lead
+                                supabase.table("email_queue").delete().eq("lead_id", lead.data[0]['id']).execute()
+                                
+                                # Remove the lead from the leads table
+                                supabase.table("leads").delete().eq("id", lead.data[0]['id']).execute()
+                                
+                                # Remove any account assignments for this lead
+                                supabase.table("lead_campaign_accounts").delete().eq("lead_id", lead.data[0]['id']).execute()
                                 
                                 print(f"Marked lead {from_email} as responded")
             
