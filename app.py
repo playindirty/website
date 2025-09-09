@@ -442,10 +442,21 @@ def track_click(lead_id, campaign_id):
         # Get the email_queue_id if available
         email_queue_id = request.args.get('eqid', None)
         
+        # Convert IDs to integers if possible
+        try:
+            lead_id_int = int(lead_id)
+        except (ValueError, TypeError):
+            lead_id_int = None
+            
+        try:
+            campaign_id_int = int(campaign_id)
+        except (ValueError, TypeError):
+            campaign_id_int = None
+        
         # Record the click in the database
         supabase.table("link_clicks").insert({
-            "lead_id": lead_id,
-            "campaign_id": campaign_id,
+            "lead_id": lead_id_int,
+            "campaign_id": campaign_id_int,
             "url": original_url,
             "email_queue_id": email_queue_id
         }).execute()
