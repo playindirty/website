@@ -145,6 +145,7 @@ def update_daily_count(email_account, count):
             .execute()
 
 def send_queued():
+    print("DEBUG: send_queued function called")
     # Get queued emails that are scheduled for now or earlier
     queued = (
         supabase.table("email_queue")
