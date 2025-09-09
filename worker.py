@@ -1,6 +1,7 @@
 # worker.py
 import os
 import smtplib
+import base64
 from email.mime.text import MIMEText
 from app import supabase, aesgcm_decrypt
 from datetime import datetime, timedelta, date# worker.py
