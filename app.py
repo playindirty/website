@@ -413,6 +413,15 @@ def api_add_smtp_account():
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 
+# Add this to app.py
+@app.route('/api/lead-campaign-accounts', methods=['GET'])
+def api_get_lead_campaign_accounts():
+    try:
+        accounts = supabase.table("lead_campaign_accounts").select("*").execute()
+        return jsonify({"ok": True, "accounts": accounts.data}), 200
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
