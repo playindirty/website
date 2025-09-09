@@ -498,5 +498,33 @@ def api_get_lead_clicks(lead_id):
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
+
+@app.route('/api/track', methods=['GET'])
+def api_track_click():
+    try:
+        lead_id = request.args.get('lead_id')
+        campaign_id = request.args.get('campaign_id')
+        url = request.args.get('url')
+        email_queue_id = request.args.get('eqid', None)
+        
+        if not all([lead_id, campaign_id, url]):
+            return "Missing parameters", 400
+            
+        # Record the click in the database
+        supabase.table("link_clicks").insert({
+            "lead_id": lead_id,
+            "campaign_id": campaign_id,
+            "url": url,
+            "email_queue_id": email_queue_id
+        }).execute()
+        
+        # Redirect to the original URL
+        return redirect(url)
+        
+    except Exception as e:
+        print(f"Error tracking click: {str(e)}")
+        return "Error tracking click", 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
