@@ -6,7 +6,6 @@ import base64
 from email.header import decode_header
 from datetime import datetime, timedelta
 import re
-import requests
 from supabase import create_client
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -73,7 +72,7 @@ def check_for_replies():
                             lead = supabase.table("leads").select("*").eq("email", from_email).execute()
                             
                             if lead.data:
-                                # Mark this lead as responded
+                                # Copy the lead to responded_leads table
                                 supabase.table("responded_leads").insert({
                                     "original_lead_id": lead.data[0]['id'],
                                     "email": lead.data[0]['email'],
@@ -89,11 +88,14 @@ def check_for_replies():
                                 # Delete any queued emails for this lead
                                 supabase.table("email_queue").delete().eq("lead_id", lead.data[0]['id']).execute()
                                 
-                                # Remove the lead from the leads table
-                                supabase.table("leads").delete().eq("id", lead.data[0]['id']).execute()
-                                
                                 # Remove any account assignments for this lead
                                 supabase.table("lead_campaign_accounts").delete().eq("lead_id", lead.data[0]['id']).execute()
+                                
+                                # Mark the lead as responded in the leads table (don't delete it)
+                                supabase.table("leads").update({
+                                    "responded": True,
+                                    "responded_at": datetime.now().isoformat()
+                                }).eq("id", lead.data[0]['id']).execute()
                                 
                                 print(f"Marked lead {from_email} as responded")
             
