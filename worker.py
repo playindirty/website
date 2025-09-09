@@ -208,11 +208,18 @@ def send_queued():
             assign_account_to_lead_campaign(q["lead_id"], q["campaign_id"], account["email"])
         
         try:
+            tracked_body = replace_urls_with_tracking(
+                 q["body"], 
+                 q["lead_id"], 
+                 q["campaign_id"],
+                 q["id"]  # email_queue_id
+            )
+
             success = send_email_via_smtp(
                 account=account,
                 to_email=q["lead_email"],
                 subject=q["subject"],
-                html_body=q["body"]
+                html_body=tracked_body
             )
 
             if success:
@@ -306,6 +313,42 @@ def render_email_template(template, lead_data):
         placeholder = "{" + key + "}"
         rendered = rendered.replace(placeholder, str(value))
     return rendered
+
+
+# Add this import at the top
+import urllib.parse
+import re
+
+# Add this function to worker.py
+def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_id=None):
+    """
+    Replace all URLs in HTML content with tracking URLs
+    """
+    # Pattern to find href attributes
+    pattern = r'href="(.*?)"'
+    
+    def replace_with_tracking(match):
+        original_url = match.group(1)
+        # Skip if it's already a tracking link or mailto link
+        if '/track/' in original_url or original_url.startswith('mailto:'):
+            return match.group(0)
+            
+        # Encode the original URL
+        encoded_url = urllib.parse.quote(original_url)
+        
+        # Build tracking URL
+        tracking_url = f"{os.environ.get('APP_BASE_URL', 'http://localhost:5000')}/track/{lead_id}/{campaign_id}?url={encoded_url}"
+        
+        # Add email_queue_id if available
+        if email_queue_id:
+            tracking_url += f"&eqid={email_queue_id}"
+            
+        return f'href="{tracking_url}"'
+    
+    # Replace all URLs
+    return re.sub(pattern, replace_with_tracking, html_content)
+
+
 
 if __name__ == "__main__":
     send_queued()
