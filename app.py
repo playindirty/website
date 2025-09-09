@@ -87,6 +87,7 @@ def api_get_smtp_accounts():
 
 
 # Update the account status endpoint to use SMTP accounts
+
 @app.route('/api/account-status', methods=['GET'])
 def api_get_account_status():
     try:
@@ -421,7 +422,14 @@ def api_get_lead_campaign_accounts():
         return jsonify({"ok": True, "accounts": accounts.data}), 200
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
-
+        
+@app.route('/api/responded-leads', methods=['GET'])
+def api_get_responded_leads():
+    try:
+        responded_leads = supabase.table("responded_leads").select("*").order("responded_at", desc=True).execute()
+        return jsonify({"ok": True, "responded_leads": responded_leads.data}), 200
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
