@@ -365,6 +365,5 @@ def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_i
     return result
 
 
-
 if __name__ == "__main__":
     send_queued()
