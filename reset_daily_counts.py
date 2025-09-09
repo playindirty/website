@@ -1,6 +1,12 @@
 # reset_daily_counts.py
+import os
 from datetime import date
-from app import supabase
+from supabase import create_client
+
+# Initialize Supabase
+SUPABASE_URL = os.environ['SUPABASE_URL']
+SUPABASE_KEY = os.environ['SUPABASE_SERVICE_ROLE_KEY']
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def reset_daily_counts():
     today = date.today().isoformat()
