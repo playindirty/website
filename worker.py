@@ -319,10 +319,9 @@ def render_email_template(template, lead_data):
 import urllib.parse
 import re
 
-# Add this function to worker.py
 def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_id=None):
     """
-    Replace all URLs in HTML content with tracking URLs
+    Replace all URLs in HTML content with tracking URLs, including internal links.
     """
     # Pattern to find href attributes
     pattern = r'href="(.*?)"'
