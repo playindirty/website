@@ -216,6 +216,9 @@
         loadLists();
       } else if (tabName === 'templates') {
         loadTemplates();
+      } else if (tabName === 'analytics') {
+        loadCampaignsForAnalytics();
+      }
       } else if (tabName === 'smtp') {
         loadSmtpAccounts();
       } else if (tabName === 'status') {
@@ -754,9 +757,7 @@ Your Name
       container.innerHTML = html;
     }
   // Add this to the showTab function
-else if (tabName === 'analytics') {
-  loadCampaignsForAnalytics();
-}
+
 
 // Add these new functions
 async function loadCampaignsForAnalytics() {
