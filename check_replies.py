@@ -2,6 +2,7 @@
 import os
 import imaplib
 import email
+import base64
 from email.header import decode_header
 from datetime import datetime, timedelta
 import re
