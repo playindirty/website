@@ -428,7 +428,7 @@ def api_get_responded_leads():
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 # Update the route to use integer IDs
-@app.route('/track/<int:lead_id>/<int:campaign_id>')
+@app.route('/track/<lead_id>/<campaign_id>')
 def track_click(lead_id, campaign_id):
     try:
         # Get the original URL from query parameters
@@ -450,21 +450,8 @@ def track_click(lead_id, campaign_id):
             "email_queue_id": email_queue_id
         }).execute()
         
-        # Use JavaScript redirect for all links to avoid redirect loops
-        return f'''
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Redirecting...</title>
-            <script>
-                window.location.href = "{original_url}";
-            </script>
-        </head>
-        <body>
-            <p>Redirecting to <a href="{original_url}">{original_url}</a></p>
-        </body>
-        </html>
-        '''
+        # Redirect to the original URL
+        return redirect(original_url)
         
     except Exception as e:
         print(f"Error tracking click: {str(e)}")
