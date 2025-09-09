@@ -326,6 +326,14 @@ def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_i
     """
     print(f"DEBUG: Processing HTML content for lead {lead_id}, campaign {campaign_id}")
     
+    # Get the base URL from environment variable
+    app_base_url = os.environ.get('APP_BASE_URL')
+    if not app_base_url:
+        print("ERROR: APP_BASE_URL environment variable is not set!")
+        return html_content
+    
+    print(f"DEBUG: Using APP_BASE_URL: {app_base_url}")
+    
     # Pattern to find href attributes
     pattern = r'href="(.*?)"'
     
@@ -342,7 +350,6 @@ def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_i
         encoded_url = urllib.parse.quote(original_url)
         
         # Build tracking URL
-        app_base_url = os.environ.get('APP_BASE_URL', 'http://localhost:5000')
         tracking_url = f"{app_base_url}/track/{lead_id}/{campaign_id}?url={encoded_url}"
         
         # Add email_queue_id if available
