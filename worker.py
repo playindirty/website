@@ -323,29 +323,38 @@ def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_i
     """
     Replace all URLs in HTML content with tracking URLs, including internal links.
     """
+    print(f"DEBUG: Processing HTML content for lead {lead_id}, campaign {campaign_id}")
+    
     # Pattern to find href attributes
     pattern = r'href="(.*?)"'
     
     def replace_with_tracking(match):
         original_url = match.group(1)
+        print(f"DEBUG: Found URL: {original_url}")
+        
         # Skip if it's already a tracking link or mailto link
         if '/track/' in original_url or original_url.startswith('mailto:'):
+            print(f"DEBUG: Skipping (already tracking or mailto): {original_url}")
             return match.group(0)
             
         # Encode the original URL
         encoded_url = urllib.parse.quote(original_url)
         
         # Build tracking URL
-        tracking_url = f"{os.environ.get('APP_BASE_URL', 'http://localhost:5000')}/track/{lead_id}/{campaign_id}?url={encoded_url}"
+        app_base_url = os.environ.get('APP_BASE_URL', 'http://localhost:5000')
+        tracking_url = f"{app_base_url}/track/{lead_id}/{campaign_id}?url={encoded_url}"
         
         # Add email_queue_id if available
         if email_queue_id:
             tracking_url += f"&eqid={email_queue_id}"
             
+        print(f"DEBUG: Replacing with: {tracking_url}")
         return f'href="{tracking_url}"'
     
     # Replace all URLs
-    return re.sub(pattern, replace_with_tracking, html_content)
+    result = re.sub(pattern, replace_with_tracking, html_content)
+    print(f"DEBUG: Final result: {result}")
+    return result
 
 
 
