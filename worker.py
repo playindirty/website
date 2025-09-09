@@ -3,7 +3,29 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 from app import supabase, aesgcm_decrypt
+from datetime import datetime, timedelta, date# worker.py
+import os
+import smtplib
+from email.mime.text import MIMEText
 from datetime import datetime, timedelta, date
+from supabase import create_client
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+# Initialize Supabase
+SUPABASE_URL = os.environ['SUPABASE_URL']
+SUPABASE_KEY = os.environ['SUPABASE_SERVICE_ROLE_KEY']
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Encryption functions
+ENCRYPTION_KEY = bytes.fromhex(os.environ['ENCRYPTION_KEY'])
+
+def aesgcm_decrypt(b64text: str) -> str:
+    data = base64.b64decode(b64text)
+    nonce = data[:12]
+    ct = data[12:]
+    aesgcm = AESGCM(ENCRYPTION_KEY)
+    pt = aesgcm.decrypt(nonce, ct, None)
+    return pt.decode('utf-8')
 
 def send_email_via_smtp(account, to_email, subject, html_body):
     """Send email using SMTP"""
