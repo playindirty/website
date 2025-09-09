@@ -1,2 +1,17 @@
 {"cleanUrls": true
+
+  "headers": [
+    {
+      "source": "/track/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/track/:lead_id/:campaign_id",
+      "destination": "/api/track"
+    }
+  ]
 }
