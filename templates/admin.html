@@ -25,6 +25,10 @@
     .status-good {background-color: #10B981;}
     .status-warning {background-color: #F59E0B;}
     .status-error {background-color: #EF4444;}
+    .workflow-status {margin-top: 20px; padding: 10px; border-radius: 5px; background: #f8f9fa;}
+    .workflow-success {background: #d1e7dd; color: #0f5132;}
+    .workflow-failure {background: #f8d7da; color: #842029;}
+    .workflow-pending {background: #fff3cd; color: #664d03;}
   </style>
 </head>
 <body>
@@ -37,6 +41,8 @@
       <div class="tab-button" onclick="showTab('templates')">Templates</div>
       <div class="tab-button" onclick="showTab('smtp')">SMTP Accounts</div>
       <div class="tab-button" onclick="showTab('status')">Account Status</div>
+      <div class="tab-button" onclick="showTab('responded')">Responded Leads</div>
+      <div class="tab-button" onclick="showTab('workflow')">Workflow</div>
     </div>
     
     <!-- Import Leads Tab -->
@@ -132,6 +138,29 @@
         <div id="accountStatusContainer">Loading...</div>
       </div>
     </div>
+    
+    <!-- Responded Leads Tab -->
+    <div id="responded" class="tab">
+      <div class="card">
+        <h3>Leads Who Have Responded</h3>
+        <div id="respondedLeadsContainer">Loading...</div>
+      </div>
+    </div>
+    
+    <!-- Workflow Tab -->
+    <div id="workflow" class="tab">
+      <div class="card">
+        <h3>GitHub Actions Workflow</h3>
+        <p>Trigger the email sending process manually or view the status of recent runs.</p>
+        <button onclick="triggerWorkflow()">Run Email Sending Now</button>
+        <div id="workflowStatus"></div>
+      </div>
+      
+      <div class="card">
+        <h3>Recent Workflow Runs</h3>
+        <div id="workflowRunsContainer">Loading workflow runs...</div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -139,6 +168,7 @@
     let currentCampaigns = [];
     let smtpAccounts = [];
     let accountStatuses = [];
+    let respondedLeads = [];
     
     function showTab(tabName) {
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -157,6 +187,10 @@
         loadSmtpAccounts();
       } else if (tabName === 'status') {
         loadAccountStatus();
+      } else if (tabName === 'responded') {
+        loadRespondedLeads();
+      } else if (tabName === 'workflow') {
+        loadWorkflowRuns();
       }
     }
     
@@ -463,79 +497,79 @@ Your Name
     }
     
     async function addSmtpAccount() {
-  const email = document.getElementById('smtpEmail').value;
-  const displayName = document.getElementById('smtpDisplayName').value;
-  const host = document.getElementById('smtpHost').value;
-  const port = document.getElementById('smtpPort').value;
-  const username = document.getElementById('smtpUsername').value;
-  const password = document.getElementById('smtpPassword').value;
-  const imapHost = document.getElementById('imapHost').value;
-  const imapPort = document.getElementById('imapPort').value;
-  const status = document.getElementById('smtpStatus');
-  
-  if (!email || !host || !port || !username || !password) {
-    status.innerText = 'Please fill all required fields (email, host, port, username, password)';
-    return;
-  }
-  
-  // Validate port numbers
-  if (isNaN(port) || port <= 0 || port > 65535) {
-    status.innerText = 'SMTP port must be a valid port number (1-65535)';
-    return;
-  }
-  
-  if (imapPort && (isNaN(imapPort) || imapPort <= 0 || imapPort > 65535)) {
-    status.innerText = 'IMAP port must be a valid port number (1-65535)';
-    return;
-  }
-  
-  status.innerText = 'Adding account...';
-  
-  try {
-    const requestBody = {
-      email: email,
-      display_name: displayName || email,
-      smtp_host: host,
-      smtp_port: parseInt(port),
-      smtp_username: username,
-      smtp_password: password
-    };
-    
-    // Only add IMAP fields if provided
-    if (imapHost) requestBody.imap_host = imapHost;
-    if (imapPort) requestBody.imap_port = parseInt(imapPort);
-    
-    const response = await fetch('/api/smtp-accounts', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
-    
-    const data = await response.json();
-    
-    if (response.ok) {
-      status.innerText = 'SMTP account added successfully!';
-      // Clear form
-      document.getElementById('smtpEmail').value = '';
-      document.getElementById('smtpDisplayName').value = '';
-      document.getElementById('smtpHost').value = '';
-      document.getElementById('smtpPort').value = '587';
-      document.getElementById('smtpUsername').value = '';
-      document.getElementById('smtpPassword').value = '';
-      document.getElementById('imapHost').value = '';
-      document.getElementById('imapPort').value = '993';
+      const email = document.getElementById('smtpEmail').value;
+      const displayName = document.getElementById('smtpDisplayName').value;
+      const host = document.getElementById('smtpHost').value;
+      const port = document.getElementById('smtpPort').value;
+      const username = document.getElementById('smtpUsername').value;
+      const password = document.getElementById('smtpPassword').value;
+      const imapHost = document.getElementById('imapHost').value;
+      const imapPort = document.getElementById('imapPort').value;
+      const status = document.getElementById('smtpStatus');
       
-      loadSmtpAccounts();
-    } else {
-      status.innerText = `Error: ${data.error || 'Unknown error'} - ${data.detail || 'No details provided'}`;
+      if (!email || !host || !port || !username || !password) {
+        status.innerText = 'Please fill all required fields (email, host, port, username, password)';
+        return;
+      }
+      
+      // Validate port numbers
+      if (isNaN(port) || port <= 0 || port > 65535) {
+        status.innerText = 'SMTP port must be a valid port number (1-65535)';
+        return;
+      }
+      
+      if (imapPort && (isNaN(imapPort) || imapPort <= 0 || imapPort > 65535)) {
+        status.innerText = 'IMAP port must be a valid port number (1-65535)';
+        return;
+      }
+      
+      status.innerText = 'Adding account...';
+      
+      try {
+        const requestBody = {
+          email: email,
+          display_name: displayName || email,
+          smtp_host: host,
+          smtp_port: parseInt(port),
+          smtp_username: username,
+          smtp_password: password
+        };
+        
+        // Only add IMAP fields if provided
+        if (imapHost) requestBody.imap_host = imapHost;
+        if (imapPort) requestBody.imap_port = parseInt(imapPort);
+        
+        const response = await fetch('/api/smtp-accounts', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          status.innerText = 'SMTP account added successfully!';
+          // Clear form
+          document.getElementById('smtpEmail').value = '';
+          document.getElementById('smtpDisplayName').value = '';
+          document.getElementById('smtpHost').value = '';
+          document.getElementById('smtpPort').value = '587';
+          document.getElementById('smtpUsername').value = '';
+          document.getElementById('smtpPassword').value = '';
+          document.getElementById('imapHost').value = '';
+          document.getElementById('imapPort').value = '993';
+          
+          loadSmtpAccounts();
+        } else {
+          status.innerText = `Error: ${data.error || 'Unknown error'} - ${data.detail || 'No details provided'}`;
+        }
+      } catch (error) {
+        status.innerText = 'Error adding SMTP account: ' + error.message;
+        console.error('SMTP account error:', error);
+      }
     }
-  } catch (error) {
-    status.innerText = 'Error adding SMTP account: ' + error.message;
-    console.error('SMTP account error:', error);
-  }
-}
     
     async function testSmtpAccount(accountId) {
       alert(`Testing SMTP account ${accountId} functionality would be implemented here`);
@@ -579,6 +613,108 @@ Your Name
           <td>${account.sent_today}</td>
           <td>${account.remaining_today}</td>
           <td><div class="account-status"><div class="status-indicator ${statusClass}"></div> ${account.remaining_today > 0 ? 'Active' : 'Limit Reached'}</div></td>
+        </tr>`;
+      });
+      html += '</table>';
+      container.innerHTML = html;
+    }
+    
+    async function loadRespondedLeads() {
+      try {
+        const response = await fetch('/api/responded-leads');
+        if (response.ok) {
+          const data = await response.json();
+          respondedLeads = data.responded_leads || [];
+          renderRespondedLeads();
+        }
+      } catch (error) {
+        console.error('Error loading responded leads:', error);
+      }
+    }
+    
+    function renderRespondedLeads() {
+      const container = document.getElementById('respondedLeadsContainer');
+      if (respondedLeads.length === 0) {
+        container.innerHTML = '<p>No leads have responded yet.</p>';
+        return;
+      }
+      
+      let html = '<table><tr><th>Email</th><th>Name</th><th>Responded At</th><th>Original List</th></tr>';
+      respondedLeads.forEach(lead => {
+        html += `<tr>
+          <td>${lead.email}</td>
+          <td>${lead.name} ${lead.last_name || ''}</td>
+          <td>${new Date(lead.responded_at).toLocaleString()}</td>
+          <td>${lead.list_name}</td>
+        </tr>`;
+      });
+      html += '</table>';
+      container.innerHTML = html;
+    }
+    
+    async function triggerWorkflow() {
+      const status = document.getElementById('workflowStatus');
+      status.innerHTML = '<div class="workflow-pending">Triggering workflow...</div>';
+      
+      try {
+        // This would need to be implemented with a backend endpoint that has a GitHub token
+        // For security reasons, we don't want to store GitHub tokens in frontend code
+        const response = await fetch('/api/trigger-workflow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          status.innerHTML = '<div class="workflow-success">Workflow triggered successfully!</div>';
+          // Reload workflow runs after a short delay
+          setTimeout(loadWorkflowRuns, 2000);
+        } else {
+          status.innerHTML = `<div class="workflow-failure">Error: ${data.error || 'Failed to trigger workflow'}</div>`;
+        }
+      } catch (error) {
+        status.innerHTML = `<div class="workflow-failure">Error: ${error.message}</div>`;
+        console.error('Workflow trigger error:', error);
+      }
+    }
+    
+    async function loadWorkflowRuns() {
+      const container = document.getElementById('workflowRunsContainer');
+      container.innerHTML = 'Loading workflow runs...';
+      
+      try {
+        // This would need to be implemented with a backend endpoint
+        const response = await fetch('/api/workflow-runs');
+        if (response.ok) {
+          const data = await response.json();
+          renderWorkflowRuns(data.runs || []);
+        } else {
+          container.innerHTML = 'Error loading workflow runs';
+        }
+      } catch (error) {
+        container.innerHTML = 'Error loading workflow runs';
+        console.error('Workflow runs error:', error);
+      }
+    }
+    
+    function renderWorkflowRuns(runs) {
+      const container = document.getElementById('workflowRunsContainer');
+      if (runs.length === 0) {
+        container.innerHTML = '<p>No workflow runs found.</p>';
+        return;
+      }
+      
+      let html = '<table><tr><th>Run ID</th><th>Status</th><th>Triggered At</th><th>Conclusion</th></tr>';
+      runs.forEach(run => {
+        const statusClass = run.status === 'completed' ? 'workflow-success' : 
+                           run.status === 'in_progress' ? 'workflow-pending' : 'workflow-failure';
+        
+        html += `<tr>
+          <td>${run.id}</td>
+          <td><span class="${statusClass}">${run.status}</span></td>
+          <td>${new Date(run.created_at).toLocaleString()}</td>
+          <td>${run.conclusion || 'N/A'}</td>
         </tr>`;
       });
       html += '</table>';
