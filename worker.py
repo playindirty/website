@@ -3,14 +3,11 @@ import os
 import smtplib
 import base64
 from email.mime.text import MIMEText
-from app import supabase, aesgcm_decrypt
-from datetime import datetime, timedelta, date# worker.py
-import os
-import smtplib
-from email.mime.text import MIMEText
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from supabase import create_client
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import urllib.parse
+import re
 
 # Initialize Supabase
 SUPABASE_URL = os.environ['SUPABASE_URL']
@@ -146,18 +143,35 @@ def update_daily_count(email_account, count):
 
 def send_queued():
     print("DEBUG: send_queued function called")
+    current_time = datetime.now(timezone.utc)
+    print(f"DEBUG: Current time (UTC): {current_time.isoformat()}")
+    
     # Get queued emails that are scheduled for now or earlier
     queued = (
         supabase.table("email_queue")
         .select("*")
         .is_("sent_at", "null")
-        .lte("scheduled_for", datetime.utcnow().isoformat())
+        .lte("scheduled_for", current_time.isoformat())
         .limit(200)
         .execute()
     )
 
+    # Add debug info about the query results
+    print(f"DEBUG: Found {len(queued.data)} queued emails")
+    
     if not queued.data:
-        print("No queued emails ready to send.")
+        print("DEBUG: No queued emails ready to send.")
+        # Let's check if there are any emails in the queue at all
+        all_queued = supabase.table("email_queue").select("*").execute()
+        print(f"DEBUG: Total emails in queue: {len(all_queued.data)}")
+        
+        # Check if there are emails with sent_at null
+        unsent = supabase.table("email_queue").select("*").is_("sent_at", "null").execute()
+        print(f"DEBUG: Unsent emails in queue: {len(unsent.data)}")
+        
+        if unsent.data:
+            for email in unsent.data:
+                print(f"DEBUG: Unsent email - ID: {email['id']}, Scheduled: {email['scheduled_for']}, Now: {current_time.isoformat()}")
         return
 
     # Get all accounts with capacity
@@ -226,7 +240,7 @@ def send_queued():
             if success:
                 # Mark as sent
                 update_data = {
-                    "sent_at": datetime.utcnow().isoformat(),
+                    "sent_at": datetime.now(timezone.utc).isoformat(),
                     "sent_from": account["email"]
                 }
                 supabase.table("email_queue").update(update_data).match({"id": q["id"]}).execute()
@@ -288,7 +302,7 @@ def schedule_followup(q, sequence, account_email):
         if lead.data:
             # Calculate send date
             days_delay = follow_up["days_after_previous"]
-            send_date = datetime.utcnow() + timedelta(days=days_delay)
+            send_date = datetime.now(timezone.utc) + timedelta(days=days_delay)
             
             # Render template with lead data
             rendered_subject = render_email_template(follow_up["subject"], lead.data)
@@ -314,11 +328,6 @@ def render_email_template(template, lead_data):
         placeholder = "{" + key + "}"
         rendered = rendered.replace(placeholder, str(value))
     return rendered
-
-
-# Add this import at the top
-import urllib.parse
-import re
 
 def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_id=None):
     """
@@ -351,7 +360,6 @@ def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_i
     
     # Replace all URLs
     return re.sub(pattern, replace_with_tracking, html_content)
-
 
 if __name__ == "__main__":
     send_queued()
