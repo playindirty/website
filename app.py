@@ -13,13 +13,14 @@ import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Flask, request, redirect, render_template, jsonify, current_app
 from dotenv import load_dotenv
 from supabase import create_client
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from email_validator import validate_email, EmailNotValidError
 from urllib.parse import urlencode
+import urllib.parse
 
 load_dotenv()
 app = Flask(__name__, template_folder="templates")
@@ -80,10 +81,7 @@ def api_get_smtp_accounts():
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
-
-
 # Update the account status endpoint to use SMTP accounts
-
 @app.route('/api/account-status', methods=['GET'])
 def api_get_account_status():
     try:
@@ -116,8 +114,6 @@ def api_get_account_status():
         return jsonify({"ok": True, "accounts": statuses}), 200
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
-
-
 
 @app.route('/api/campaigns', methods=['GET'])
 def api_get_campaigns():
@@ -184,7 +180,7 @@ def api_create_campaign():
                         "subject": rendered_subject,
                         "body": rendered_body,
                         "sequence": 0,  # 0 for initial email
-                        "scheduled_for": datetime.utcnow().isoformat()
+                        "scheduled_for": datetime.now(timezone.utc).isoformat()
                     })
                 
                 # Insert in chunks
@@ -192,6 +188,8 @@ def api_create_campaign():
                 for i in range(0, len(email_queue), CHUNK_SIZE):
                     chunk = email_queue[i:i+CHUNK_SIZE]
                     supabase.table("email_queue").insert(chunk).execute()
+                
+                print(f"DEBUG: Queued {len(email_queue)} emails with scheduled_for: {datetime.now(timezone.utc).isoformat()}")
         
         return jsonify({"ok": True, "campaign": campaign}), 200
         
@@ -223,7 +221,7 @@ def api_queue_followup():
         
         # Calculate send date (days after previous email)
         days_delay = follow_up.data['days_after_previous']
-        send_date = datetime.utcnow() + timedelta(days=days_delay)
+        send_date = datetime.now(timezone.utc) + timedelta(days=days_delay)
         
         # Queue follow-up emails
         email_queue = []
@@ -254,12 +252,6 @@ def api_queue_followup():
         
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
-
-
-# Add these new routes to your app.py
-
-# Add this import at the top of app.py
-import traceback
 
 # Update the api_get_lead_lists function
 @app.route('/api/leads/lists', methods=['GET'])
@@ -409,7 +401,6 @@ def api_add_smtp_account():
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
-
 # Add this to app.py
 @app.route('/api/lead-campaign-accounts', methods=['GET'])
 def api_get_lead_campaign_accounts():
@@ -468,8 +459,6 @@ def track_click(lead_id, campaign_id):
         print(f"Error tracking click: {str(e)}")
         return "Error tracking click", 500
 
-import urllib.parse
-
 @app.route('/api/campaigns/<int:campaign_id>/clicks')
 def api_get_campaign_clicks(campaign_id):
     try:
@@ -496,7 +485,6 @@ def api_get_lead_clicks(lead_id):
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
-
 @app.route('/api/track', methods=['GET'])
 def api_track_click():
     try:
@@ -522,7 +510,6 @@ def api_track_click():
     except Exception as e:
         print(f"Error tracking click: {str(e)}")
         return "Error tracking click", 500
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
