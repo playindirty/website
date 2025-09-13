@@ -161,6 +161,7 @@
             <th>Lead Email</th>
             <th>URL Clicked</th>
             <th>Time</th>
+            <th>AI Demo Used</th> <!-- New column -->
           </tr>
         </thead>
         <tbody id="clickData">
@@ -815,6 +816,55 @@ async function loadCampaignClicks(campaignId) {
     console.error('Error loading campaign clicks:', error);
   }
 }
+
+    
+// Add this function to check AI usage for a lead
+async function checkAIUsage(leadId) {
+    try {
+        const response = await fetch(`/api/leads/${leadId}/ai-usage`);
+        const data = await response.json();
+        
+        if (data.ai_usage) {
+            return `<i class="fas fa-check" style="color: #64ffda;"></i> (${data.ai_usage.usage_count}x)`;
+        } else {
+            return '<i class="fas fa-times" style="color: #8892b0;"></i>';
+        }
+    } catch (error) {
+        console.error('Error checking AI usage:', error);
+        return '<i class="fas fa-question" style="color: #8892b0;"></i>';
+    }
+}
+
+// Update the loadCampaignClicks function to include AI usage
+async function loadCampaignClicks(campaignId) {
+  try {
+    const response = await fetch(`/api/campaigns/${campaignId}/clicks`);
+    if (response.ok) {
+      const data = await response.json();
+      const tbody = document.getElementById('clickData');
+      tbody.innerHTML = '';
+      
+      if (data.clicks && data.clicks.length > 0) {
+        for (const click of data.clicks) {
+          const aiUsageHTML = await checkAIUsage(click.lead_id);
+          
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${click.leads?.email || 'Unknown'}</td>
+            <td>${click.url}</td>
+            <td>${new Date(click.clicked_at).toLocaleString()}</td>
+            <td>${aiUsageHTML}</td>
+          `;
+          tbody.appendChild(row);
+        }
+      } else {
+        tbody.innerHTML = '<tr><td colspan="4">No clicks recorded for this campaign</td></tr>';
+      }
+    }
+  } catch (error) {
+    console.error('Error loading campaign clicks:', error);
+  }
+}    
     // Initial load
     loadLists();
   </script>
