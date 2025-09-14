@@ -23,10 +23,6 @@ from urllib.parse import urlencode
 import urllib.parse
 
 
-
-load_dotenv()
-app = Flask(__name__, template_folder="templates")
-
 # Supabase server-side client (service role)
 SUPABASE_URL = os.environ['SUPABASE_URL']
 SUPABASE_KEY = os.environ['SUPABASE_SERVICE_ROLE_KEY']
@@ -67,8 +63,8 @@ def render_email_template(template, lead_data):
 # Add this import at the top of app.py
 from flask_cors import CORS
 
-# Initialize Flask app
-app = Flask(__name__)
+load_dotenv()
+app = Flask(__name__, template_folder="templates")
 
 # Add CORS support - allow requests from your Vercel domain
 CORS(app, resources={
@@ -551,6 +547,8 @@ def demo():
                          supabase_url=os.environ['SUPABASE_URL'],
                          supabase_anon_key=os.environ['SUPABASE_ANON_KEY'])
 
+
+@app.route('/api/generate-reply-prompt', methods=['OPTIONS', 'POST'])
 def generate_reply_prompt():
     if request.method == "OPTIONS":
         # Handle preflight request
