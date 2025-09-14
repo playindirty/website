@@ -590,10 +590,19 @@ def api_get_lead_ai_usage(lead_id):
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
         
 # Add to imports at the top of app.py
+# Add these imports at the top of app.py
 import json
-from utils import callAIML_from_flask  # You'll need to create this utility function
+from datetime import datetime, timezone
+from urllib.parse import unquote
 
 # Add these routes to app.py
+
+@app.route('/demo')
+def demo():
+    return render_template('demo.html', 
+                         supabase_url=os.environ['SUPABASE_URL'],
+                         supabase_anon_key=os.environ['SUPABASE_ANON_KEY'])
+
 @app.route('/api/generate-reply-prompt', methods=['OPTIONS', 'POST'])
 def generate_reply_prompt():
     if request.method == "OPTIONS":
@@ -606,7 +615,7 @@ def generate_reply_prompt():
 
     # Enhanced prompt to generate reply and three follow-ups
     enhanced_prompt = f"""
-    Generate a professional reply to the following email, and then generate three follow-up emails that would be sent later.
+    Generate a professional real estate agent reply to the following email, and then generate three follow-up emails that would be sent later.
     Format your response exactly as follows:
 
     === REPLY ===
@@ -626,7 +635,44 @@ def generate_reply_prompt():
     """
 
     try:
-        full_response = callAIML_from_flask(enhanced_prompt)
+        # Use the GitHub AI models
+        GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
+        MODELS = os.environ.get("GH_MODELS", "openai/gpt-4o-mini").split(",")
+        
+        full_response = ""
+        for model in MODELS:
+            try:
+                resp = requests.post(
+                    "https://models.github.ai/inference/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {GITHUB_TOKEN}",
+                        "Accept": "application/vnd.github+json",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model.strip(),
+                        "messages": [
+                            {"role": "system", "content": "You are a professional real estate agent."},
+                            {"role": "user",   "content": enhanced_prompt}
+                        ],
+                        "temperature": 0.7,
+                        "top_p": 0.7,
+                        "max_tokens": 512
+                    },
+                    timeout=30
+                )
+                
+                if resp.status_code == 200:
+                    full_response = resp.json()["choices"][0]["message"]["content"].strip()
+                    break
+                elif resp.status_code in (404, 429):
+                    continue
+            except Exception as e:
+                print(f"Error with model {model}: {str(e)}")
+                continue
+        
+        if not full_response:
+            return jsonify({"error": "All models failed or were rate-limited"}), 500
         
         # Parse the response to extract reply and follow-ups
         sections = {}
@@ -666,9 +712,9 @@ def generate_reply_prompt():
             "follow_ups": follow_ups
         })
     except Exception as e:
+        print(f"Error generating reply: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-# This endpoint should already exist in your app.py
 @app.route('/api/record-ai-usage', methods=['POST'])
 def api_record_ai_usage():
     try:
@@ -714,6 +760,34 @@ def api_record_ai_usage():
                 .execute()
         
         return jsonify({"ok": True}), 200
+        
+    except Exception as e:
+        print(f"Error recording AI usage: {str(e)}")
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
+
+@app.route('/api/leads/<int:lead_id>/ai-usage')
+def api_get_lead_ai_usage(lead_id):
+    try:
+        # Get lead email first
+        lead = supabase.table("leads") \
+            .select("email") \
+            .eq("id", lead_id) \
+            .single() \
+            .execute()
+        
+        if not lead.data:
+            return jsonify({"ok": True, "ai_usage": None}), 200
+        
+        # Check AI usage
+        ai_usage = supabase.table("ai_demo_usage") \
+            .select("*") \
+            .eq("email", lead.data['email']) \
+            .execute()
+        
+        return jsonify({
+            "ok": True, 
+            "ai_usage": ai_usage.data[0] if ai_usage.data else None
+        }), 200
         
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
