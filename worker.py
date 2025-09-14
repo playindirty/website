@@ -267,8 +267,8 @@ def send_queued():
                     account_index += 1
                 
                 # If this is an initial email (sequence 0), schedule the first follow-up
-                if q["sequence"] == 0:
-                    schedule_followup(q, 1, account["email"])
+                next_sequence = q["sequence"] + 1
+                schedule_followup(q, next_sequence, account["email"])
                 
                 sent_count += 1
             else:
@@ -285,16 +285,19 @@ def send_queued():
 
 def schedule_followup(q, sequence, account_email):
     """Schedule a follow-up email using the same account"""
-    # Get the follow-up for this campaign and sequence
-    follow_up = (
-        supabase.table("campaign_followups")
-        .select("*")
-        .eq("campaign_id", q["campaign_id"])
-        .eq("sequence", sequence)
-        .execute()
-    )
-    
-    if follow_up.data:
+    try:
+        # Get the follow-up for this campaign and sequence
+        follow_up = (
+            supabase.table("campaign_followups")
+            .select("*")
+            .eq("campaign_id", q["campaign_id"])
+            .eq("sequence", sequence)
+            .execute()
+        )
+        
+        if not follow_up.data:
+            return  # No follow-up for this sequence
+        
         follow_up = follow_up.data[0]
         # Get lead data
         lead = supabase.table("leads").select("*").eq("id", q["lead_id"]).single().execute()
@@ -318,6 +321,8 @@ def schedule_followup(q, sequence, account_email):
                 "sequence": sequence,
                 "scheduled_for": send_date.isoformat()
             }).execute()
+    except Exception as e:
+        print(f"Error scheduling follow-up: {str(e)}")
 
 def render_email_template(template, lead_data):
     """Replace template variables with lead data"""
