@@ -22,6 +22,8 @@ from email_validator import validate_email, EmailNotValidError
 from urllib.parse import urlencode
 import urllib.parse
 
+
+
 load_dotenv()
 app = Flask(__name__, template_folder="templates")
 
@@ -62,7 +64,26 @@ def render_email_template(template, lead_data):
     rendered = rendered.replace('  ', '&nbsp;&nbsp;')
     
     return rendered
+# Add this import at the top of app.py
+from flask_cors import CORS
 
+# Initialize Flask app
+app = Flask(__name__)
+
+# Add CORS support - allow requests from your Vercel domain
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://closefaster.vercel.app",
+            "http://localhost:3000",  # For local development
+            "http://127.0.0.1:3000"   # For local development
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
+# Your existing routes...
 # ---------- Routes ----------
 @app.route('/')
 def index():
@@ -530,10 +551,13 @@ def demo():
                          supabase_url=os.environ['SUPABASE_URL'],
                          supabase_anon_key=os.environ['SUPABASE_ANON_KEY'])
 
-@app.route('/api/generate-reply-prompt', methods=['OPTIONS', 'POST'])
 def generate_reply_prompt():
     if request.method == "OPTIONS":
-        return ("", 204)
+        # Handle preflight request
+        response = jsonify({"status": "ok"})
+        response.headers.add("Access-Control-Allow-Origin", "https://closefaster.vercel.app")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        return response
 
     data = request.get_json(force=True)
     prompt = data.get("prompt", "").strip()
