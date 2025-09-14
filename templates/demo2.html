@@ -735,6 +735,21 @@ if (leadId) {
   
 });
 </script>
+  
+<script>
+  // Add this to demo2.html to check for tracking parameters
+document.addEventListener('DOMContentLoaded', function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const leadId = urlParams.get('lead_id');
+  const campaignId = urlParams.get('campaign_id');
+
+  if (leadId) {
+    // Store the lead ID for tracking
+    window.currentLeadId = leadId;
+    document.getElementById('lead-id').value = leadId;
+  }
+});
+</script>
 
 <!-- Add a hidden field to store the lead ID -->
 <input type="hidden" id="lead-id" name="lead_id">
