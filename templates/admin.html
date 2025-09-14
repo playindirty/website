@@ -819,6 +819,7 @@ async function loadCampaignClicks(campaignId) {
 
     
 // Add this function to check AI usage for a lead
+// Update this function in admin.html
 async function checkAIUsage(leadId) {
     try {
         const response = await fetch(`/api/leads/${leadId}/ai-usage`);
