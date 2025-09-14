@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Configuration
-EXTERNAL_AI_API = "https://anotherwebsite.onrender.com/api/generate-reply-prompt"
+EXTERNAL_AI_API = "https://website-1-f6l8.onrender.com/api/generate-reply-prompt"
 
 @app.route('/api/generate-reply-prompt', methods=['POST', 'OPTIONS'])
 def generate_reply_prompt():
