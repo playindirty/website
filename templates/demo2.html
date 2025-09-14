@@ -488,7 +488,7 @@
       // Generate AI response using the actual API
       async function generateResponse() {
         const input = document.getElementById('demo-input').value.trim();
-        const leadId = window.currentLeadId || document.getElementById('lead-id').value;
+        const leadId = window.currentLeadId;
         const responseContainer = document.getElementById('response-container');
         const aiResponse = document.getElementById('ai-response');
         const generateBtn = document.getElementById('generate-btn');
@@ -514,7 +514,7 @@
         // Show loading state
         generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
         generateBtn.disabled = true;
-        aiResponse.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating your response...';
+        aiResponse.innerHTML = '<i class="fas fa-spinner fa-spin'></i> Generating your response...';
         responseContainer.style.display = 'block';
         
         try {
@@ -534,15 +534,15 @@
           const data = await response.json();
           aiResponse.textContent = data.reply || data;
           
-          const leadId = window.currentLeadId || document.getElementById('lead-id').value;
+          // Record AI usage if we have a lead ID
           if (leadId) {
-           try {
-              await fetch('/api/record-ai-usage', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ lead_id: leadId })
-                        });
-             } catch (error) {
+            try {
+              await fetch('https://website-1-f6l8.onrender.com/api/record-ai-usage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lead_id: leadId })
+              });
+            } catch (error) {
                  console.error('Error recording AI usage:', error);
                   }
                 }
