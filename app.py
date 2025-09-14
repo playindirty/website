@@ -469,8 +469,13 @@ def track_click(lead_id, campaign_id):
             "email_queue_id": email_queue_id
         }).execute()
         
-        # Redirect to the original URL
-        return redirect(original_url)
+        # Redirect to the demo page with lead_id as parameter
+        demo_url = "https://closefaster.vercel.app/templates/demo2.html"
+        redirect_url = f"{demo_url}?lead_id={lead_id}&campaign_id={campaign_id}"
+        if email_queue_id:
+            redirect_url += f"&eqid={email_queue_id}"
+            
+        return redirect(redirect_url)
         
     except Exception as e:
         print(f"Error tracking click: {str(e)}")
