@@ -673,10 +673,22 @@ def api_record_ai_usage():
         if not lead_id:
             return jsonify({"error": "Lead ID is required"}), 400
         
-        # Check if we already have a record for this lead
+        # Get the lead's email
+        lead = supabase.table("leads") \
+            .select("email") \
+            .eq("id", lead_id) \
+            .single() \
+            .execute()
+        
+        if not lead.data:
+            return jsonify({"error": "Lead not found"}), 404
+        
+        email = lead.data['email']
+        
+        # Check if we already have a record for this email
         existing = supabase.table("ai_demo_usage") \
             .select("*") \
-            .eq("lead_id", lead_id) \
+            .eq("email", email) \
             .execute()
         
         if existing.data:
@@ -686,13 +698,14 @@ def api_record_ai_usage():
                     "usage_count": existing.data[0]['usage_count'] + 1,
                     "last_used_at": datetime.now(timezone.utc).isoformat()
                 }) \
-                .eq("lead_id", lead_id) \
+                .eq("email", email) \
                 .execute()
         else:
             # Create new record
             supabase.table("ai_demo_usage") \
                 .insert({
                     "lead_id": lead_id,
+                    "email": email,
                     "usage_count": 1,
                     "first_used_at": datetime.now(timezone.utc).isoformat(),
                     "last_used_at": datetime.now(timezone.utc).isoformat()
@@ -732,6 +745,15 @@ def api_get_lead_ai_usage(lead_id):
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
+
+
+@app.route('/api/leads/<int:lead_id>', methods=['GET'])
+def api_get_lead(lead_id):
+    try:
+        lead = supabase.table("leads").select("*").eq("id", lead_id).single().execute()
+        return jsonify({"ok": True, "lead": lead.data}), 200
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
 
 if __name__ == "__main__":
