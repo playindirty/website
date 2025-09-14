@@ -512,55 +512,7 @@ def api_track_click():
         return "Error tracking click", 500
 
 
-# Add this near the other API endpoints in app.py
-@app.route('/api/record-ai-usage', methods=['POST'])
-def api_record_ai_usage():
-    try:
-        data = request.get_json(force=True)
-        email = data.get('email')
-        
-        if not email:
-            return jsonify({"error": "Email is required"}), 400
-        
-        # Check if we already have a record for this email
-        existing = supabase.table("ai_demo_usage") \
-            .select("*") \
-            .eq("email", email) \
-            .execute()
-        
-        if existing.data:
-            # Update existing record
-            supabase.table("ai_demo_usage") \
-                .update({
-                    "usage_count": existing.data[0]['usage_count'] + 1,
-                    "last_used_at": datetime.now(timezone.utc).isoformat()
-                }) \
-                .eq("email", email) \
-                .execute()
-        else:
-            # Try to find the lead by email
-            lead = supabase.table("leads") \
-                .select("id") \
-                .eq("email", email) \
-                .execute()
-            
-            lead_id = lead.data[0]['id'] if lead.data else None
-            
-            # Create new record
-            supabase.table("ai_demo_usage") \
-                .insert({
-                    "lead_id": lead_id,
-                    "email": email,
-                    "usage_count": 1,
-                    "first_used_at": datetime.now(timezone.utc).isoformat(),
-                    "last_used_at": datetime.now(timezone.utc).isoformat()
-                }) \
-                .execute()
-        
-        return jsonify({"ok": True}), 200
-        
-    except Exception as e:
-        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
+
 
 @app.route('/api/leads/<int:lead_id>/ai-usage')
 def api_get_lead_ai_usage(lead_id):
