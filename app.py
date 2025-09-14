@@ -724,33 +724,6 @@ def api_record_ai_usage():
         print(f"Error recording AI usage: {str(e)}")
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
 
-@app.route('/api/leads/<int:lead_id>/ai-usage')
-def api_get_lead_ai_usage(lead_id):
-    try:
-        # Get lead email first
-        lead = supabase.table("leads") \
-            .select("email") \
-            .eq("id", lead_id) \
-            .single() \
-            .execute()
-        
-        if not lead.data:
-            return jsonify({"ok": True, "ai_usage": None}), 200
-        
-        # Check AI usage
-        ai_usage = supabase.table("ai_demo_usage") \
-            .select("*") \
-            .eq("email", lead.data['email']) \
-            .execute()
-        
-        return jsonify({
-            "ok": True, 
-            "ai_usage": ai_usage.data[0] if ai_usage.data else None
-        }), 200
-        
-    except Exception as e:
-        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
-
 
 
 @app.route('/api/leads/<int:lead_id>', methods=['GET'])
