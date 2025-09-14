@@ -488,6 +488,7 @@
       // Generate AI response using the actual API
       async function generateResponse() {
         const input = document.getElementById('demo-input').value.trim();
+        const leadId = window.currentLeadId || document.getElementById('lead-id').value;
         const responseContainer = document.getElementById('response-container');
         const aiResponse = document.getElementById('ai-response');
         const generateBtn = document.getElementById('generate-btn');
@@ -533,15 +534,15 @@
           const data = await response.json();
           aiResponse.textContent = data.reply || data;
           
-          const email = document.getElementById('demo-email')?.value; // You'll need to add this field
-          if (email) {
+          const leadId = window.currentLeadId || document.getElementById('lead-id').value; // You'll need to add this field
+          if (leadId) {
            try {
-                await fetch('/api/record-ai-usage', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email: email })
-                               });
-         } catch (error) {
+              await fetch('/api/record-ai-usage', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ lead_id: leadId })
+                        });
+             } catch (error) {
                  console.error('Error recording AI usage:', error);
                   }
                 }
@@ -705,6 +706,47 @@
     // Start the application initialization
     initializeApp();
   </script>
+<!---------------------------------------------------------------------------------------------------------->
+  <!-- Add this script to demo2.html to check for tracking parameters -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Check if there's a lead_id in the URL parameters (from tracked links)
+  const urlParams = new URLSearchParams(window.location.search);
+  const leadId = urlParams.get('lead_id');
+  const campaignId = urlParams.get('campaign_id');
+  
+  if (leadId) {
+    // If we have a lead ID, fetch the lead's email from the server
+    fetch(`/api/leads/${leadId}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok && data.lead) {
+          // Pre-fill the email field and hide it
+          const emailField = document.getElementById('demo-email');
+          if (emailField) {
+            emailField.value = data.lead.email;
+            emailField.style.display = 'none';
+            
+            // Also hide the label
+            const emailLabel = document.querySelector('label[for="demo-email"]');
+            if (emailLabel) emailLabel.style.display = 'none';
+          }
+          
+          // Store the lead ID for tracking
+          window.currentLeadId = leadId;
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching lead data:', error);
+      });
+  }
+});
+</script>
+
+<!-- Add a hidden field to store the lead ID -->
+<input type="hidden" id="lead-id" name="lead_id">
+  <!-------------------------------------------------------------------------------------->
+  
   <script>
   function copyResponse() {
     const responseEl = document.getElementById("ai-response");
