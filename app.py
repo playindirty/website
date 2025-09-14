@@ -668,15 +668,15 @@ def generate_reply_prompt():
 def api_record_ai_usage():
     try:
         data = request.get_json(force=True)
-        email = data.get('email')
+        lead_id = data.get('lead_id')
         
-        if not email:
-            return jsonify({"error": "Email is required"}), 400
+        if not lead_id:
+            return jsonify({"error": "Lead ID is required"}), 400
         
-        # Check if we already have a record for this email
+        # Check if we already have a record for this lead
         existing = supabase.table("ai_demo_usage") \
             .select("*") \
-            .eq("email", email) \
+            .eq("lead_id", lead_id) \
             .execute()
         
         if existing.data:
@@ -686,22 +686,13 @@ def api_record_ai_usage():
                     "usage_count": existing.data[0]['usage_count'] + 1,
                     "last_used_at": datetime.now(timezone.utc).isoformat()
                 }) \
-                .eq("email", email) \
+                .eq("lead_id", lead_id) \
                 .execute()
         else:
-            # Try to find the lead by email
-            lead = supabase.table("leads") \
-                .select("id") \
-                .eq("email", email) \
-                .execute()
-            
-            lead_id = lead.data[0]['id'] if lead.data else None
-            
             # Create new record
             supabase.table("ai_demo_usage") \
                 .insert({
                     "lead_id": lead_id,
-                    "email": email,
                     "usage_count": 1,
                     "first_used_at": datetime.now(timezone.utc).isoformat(),
                     "last_used_at": datetime.now(timezone.utc).isoformat()
