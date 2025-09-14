@@ -589,6 +589,136 @@ def api_get_lead_ai_usage(lead_id):
     except Exception as e:
         return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
         
+# Add to imports at the top of app.py
+import json
+from utils import callAIML_from_flask  # You'll need to create this utility function
+
+# Add these routes to app.py
+@app.route('/api/generate-reply-prompt', methods=['OPTIONS', 'POST'])
+def generate_reply_prompt():
+    if request.method == "OPTIONS":
+        return ("", 204)
+
+    data = request.get_json(force=True)
+    prompt = data.get("prompt", "").strip()
+    if not prompt:
+        return jsonify({"error": "Missing prompt"}), 400
+
+    # Enhanced prompt to generate reply and three follow-ups
+    enhanced_prompt = f"""
+    Generate a professional reply to the following email, and then generate three follow-up emails that would be sent later.
+    Format your response exactly as follows:
+
+    === REPLY ===
+    [Your main reply here]
+
+    === FOLLOW UP 1 ===
+    [First follow-up email]
+
+    === FOLLOW UP 2 ===
+    [Second follow-up email]
+
+    === FOLLOW UP 3 ===
+    [Third follow-up email]
+
+    Email to respond to:
+    {prompt}
+    """
+
+    try:
+        full_response = callAIML_from_flask(enhanced_prompt)
+        
+        # Parse the response to extract reply and follow-ups
+        sections = {}
+        current_section = None
+        lines = full_response.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if line == "=== REPLY ===":
+                current_section = 'reply'
+                sections[current_section] = []
+            elif line == "=== FOLLOW UP 1 ===":
+                current_section = 'follow_up_1'
+                sections[current_section] = []
+            elif line == "=== FOLLOW UP 2 ===":
+                current_section = 'follow_up_2'
+                sections[current_section] = []
+            elif line == "=== FOLLOW UP 3 ===":
+                current_section = 'follow_up_3'
+                sections[current_section] = []
+            elif current_section and line:
+                sections[current_section].append(line)
+        
+        # Join the lines for each section
+        reply = ' '.join(sections.get('reply', [])).strip()
+        follow_ups = [
+            ' '.join(sections.get('follow_up_1', [])).strip(),
+            ' '.join(sections.get('follow_up_2', [])).strip(),
+            ' '.join(sections.get('follow_up_3', [])).strip()
+        ]
+        
+        # Remove any empty follow-ups
+        follow_ups = [fu for fu in follow_ups if fu]
+        
+        return jsonify({
+            "reply": reply,
+            "follow_ups": follow_ups
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# This endpoint should already exist in your app.py
+@app.route('/api/record-ai-usage', methods=['POST'])
+def api_record_ai_usage():
+    try:
+        data = request.get_json(force=True)
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
+        
+        # Check if we already have a record for this email
+        existing = supabase.table("ai_demo_usage") \
+            .select("*") \
+            .eq("email", email) \
+            .execute()
+        
+        if existing.data:
+            # Update existing record
+            supabase.table("ai_demo_usage") \
+                .update({
+                    "usage_count": existing.data[0]['usage_count'] + 1,
+                    "last_used_at": datetime.now(timezone.utc).isoformat()
+                }) \
+                .eq("email", email) \
+                .execute()
+        else:
+            # Try to find the lead by email
+            lead = supabase.table("leads") \
+                .select("id") \
+                .eq("email", email) \
+                .execute()
+            
+            lead_id = lead.data[0]['id'] if lead.data else None
+            
+            # Create new record
+            supabase.table("ai_demo_usage") \
+                .insert({
+                    "lead_id": lead_id,
+                    "email": email,
+                    "usage_count": 1,
+                    "first_used_at": datetime.now(timezone.utc).isoformat(),
+                    "last_used_at": datetime.now(timezone.utc).isoformat()
+                }) \
+                .execute()
+        
+        return jsonify({"ok": True}), 200
+        
+    except Exception as e:
+        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
