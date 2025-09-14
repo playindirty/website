@@ -534,7 +534,7 @@
           const data = await response.json();
           aiResponse.textContent = data.reply || data;
           
-          const leadId = window.currentLeadId  // You'll need to add this field
+          const leadId = window.currentLeadId || document.getElementById('lead-id').value;
           if (leadId) {
            try {
               await fetch('/api/record-ai-usage', {
