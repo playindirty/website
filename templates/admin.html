@@ -124,11 +124,6 @@
         <button onclick="addSmtpAccount()">Add SMTP Account</button>
         <div id="smtpStatus"></div>
       </div>
-      <div>
-           <button type="button" onclick="configureOutlook()" style="margin-top: 10px; background: #0078d4;">
-    Auto-Configure Outlook
-</button>
-      </div>
       <div class="card">
         <h3>Existing SMTP Accounts</h3>
         <div id="smtpAccountsContainer">Loading...</div>
@@ -821,14 +816,6 @@ async function loadCampaignClicks(campaignId) {
   }
 }
 
-//----------------------------------------------------------------------------------------------------------------------------------------------
-    function configureOutlook() {
-    document.getElementById('smtpHost').value = 'smtp.office365.com';
-    document.getElementById('smtpPort').value = '587';
-    document.getElementById('smtpUsername').value = document.getElementById('smtpEmail').value;
-    alert('Outlook configuration applied. Please use your app password (not your regular password).');
-}
-//-----------------------------------------------------------------------------------------------------------------------------------------------    
 // Add this function to check AI usage for a lead
 // Update this function in admin.html
 async function checkAIUsage(leadId) {
