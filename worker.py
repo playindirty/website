@@ -26,7 +26,7 @@ def aesgcm_decrypt(b64text: str) -> str:
     return pt.decode('utf-8')
 
 def send_email_via_smtp(account, to_email, subject, html_body):
-    """Send email using SMTP"""
+    """Send email using SMTP with Outlook-specific handling"""
     try:
         # Decrypt SMTP password
         smtp_password = aesgcm_decrypt(account["encrypted_smtp_password"])
@@ -37,10 +37,20 @@ def send_email_via_smtp(account, to_email, subject, html_body):
         msg["From"] = f"{account['display_name']} <{account['email']}>"
         msg["To"] = to_email
         
+        # Outlook-specific connection handling
+        if account.get("is_outlook"):
+            smtp = smtplib.SMTP(account["smtp_host"], account["smtp_port"])
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(account["smtp_username"], smtp_password)
+        else:
+            # Standard SMTP connection
+            smtp = smtplib.SMTP(account["smtp_host"], account["smtp_port"])
+            smtp.starttls()
+            smtp.login(account["smtp_username"], smtp_password)
+        
         # Send email
-        smtp = smtplib.SMTP(account["smtp_host"], account["smtp_port"])
-        smtp.starttls()  # Use TLS
-        smtp.login(account["smtp_username"], smtp_password)
         smtp.send_message(msg)
         smtp.quit()
         return True
