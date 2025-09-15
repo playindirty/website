@@ -325,13 +325,18 @@ def schedule_followup(q, sequence, account_email):
         print(f"Error scheduling follow-up: {str(e)}")
 
 def render_email_template(template, lead_data):
-    """Replace template variables with lead data"""
+    """Replace template variables with lead data and preserve whitespace"""
     rendered = template
     for key, value in lead_data.items():
         if value is None:
             value = ""
         placeholder = "{" + key + "}"
         rendered = rendered.replace(placeholder, str(value))
+    
+    # Preserve line breaks and spaces by converting them to HTML
+    rendered = rendered.replace('\n', '<br>')
+    rendered = rendered.replace('  ', '&nbsp;&nbsp;')
+    
     return rendered
 
 def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_id=None):
