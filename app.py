@@ -385,37 +385,14 @@ def api_add_smtp_account():
     try:
         data = request.get_json(force=True)
         
-        # Outlook-specific connection test
-        if 'outlook.com' in data['smtp_host'] or 'office365.com' in data['smtp_host']:
-            try:
-                # For Outlook, we need to use a different approach
-                smtp = smtplib.SMTP(data['smtp_host'], data['smtp_port'])
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.ehlo()
-                smtp.login(data['smtp_username'], data['smtp_password'])
-                smtp.quit()
-            except Exception as e:
-                # If standard login fails, try with different parameters
-                try:
-                    smtp = smtplib.SMTP(data['smtp_host'], data['smtp_port'])
-                    smtp.ehlo()
-                    smtp.starttls()
-                    smtp.ehlo()
-                    # Some Outlook accounts require the email as both username and login
-                    smtp.login(data['smtp_username'], data['smtp_password'])
-                    smtp.quit()
-                except Exception as e2:
-                    return jsonify({"error": "smtp_connection_failed", "detail": f"Outlook authentication failed: {str(e2)}"}), 400
-        else:
-            # Standard SMTP test for other providers
-            try:
-                smtp = smtplib.SMTP(data['smtp_host'], data['smtp_port'])
-                smtp.starttls()
-                smtp.login(data['smtp_username'], data['smtp_password'])
-                smtp.quit()
-            except Exception as e:
-                return jsonify({"error": "smtp_connection_failed", "detail": str(e)}), 400
+        # Test SMTP connection first
+        try:
+            smtp = smtplib.SMTP(data['smtp_host'], data['smtp_port'])
+            smtp.starttls()  # Use TLS for security
+            smtp.login(data['smtp_username'], data['smtp_password'])
+            smtp.quit()
+        except Exception as e:
+            return jsonify({"error": "smtp_connection_failed", "detail": str(e)}), 400
         
         # Encrypt password before storing
         encrypted_password = aesgcm_encrypt(data['smtp_password'])
@@ -429,8 +406,7 @@ def api_add_smtp_account():
             "smtp_username": data['smtp_username'],
             "encrypted_smtp_password": encrypted_password,
             "imap_host": data.get('imap_host'),
-            "imap_port": data.get('imap_port'),
-            "is_outlook": 'outlook.com' in data['smtp_host'] or 'office365.com' in data['smtp_host']
+            "imap_port": data.get('imap_port')
         }
         
         result = supabase.table("smtp_accounts").insert(account_data).execute()
