@@ -254,6 +254,12 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   
   <script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+  myass();            // <--- make sure this runs
+  initializeApp();
+});
+
     // Initialize Supabase first to avoid reference errors
     function myass() {
       // Supabase Configuration
