@@ -227,6 +227,11 @@
             <input type="email" id="email" placeholder="Where should we send your login?" required>
           </div>
 
+          <div class="form-group">
+            <label for="password">Create a Password</label>
+            <input type="password" id="password" placeholder="Create a secure password" required>
+          </div>
+
           <button class="cta-button" style="width:100%;padding:1.2rem;margin-top:1rem;" type="submit" id="signup-button"><i class="fas fa-rocket"></i> Start My FREE 30-Day Trial (No CC)</button>
           <p style="color:#8892b0;font-size:0.9rem;margin-top:1rem;text-align:center;"><strong>No credit card required</strong> • Join 3,247+ agents • Cancel anytime</p>
         </form>
@@ -620,6 +625,7 @@ async function initializeApp() {
       if (e.target && e.target.id === 'trial-form') {
         e.preventDefault();
         const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
         const name = document.getElementById('name').value.trim();
         const btn = document.getElementById('signup-button');
         const formMessage = document.getElementById('form-message');
@@ -632,23 +638,46 @@ async function initializeApp() {
           return; 
         }
 
+        if (!password) { 
+          formMessage.textContent = 'Please create a password';
+          formMessage.className = 'form-message error';
+          formMessage.style.display = 'block';
+          return; 
+        }
+
         btn.disabled = true; 
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
         
         try {
-          // Create user data object
-          const userData = {
+          // Sign up with Supabase
+          const { data, error } = await supabase.auth.signUp({
             email: email,
-            name: name || '',
-            user_type: 'agent',
-            source: 'marketing_page'
-          };
+            password: password,
+            options: {
+              data: {
+                name: name || '',
+                user_type: 'agent'
+              }
+            }
+          });
+
+          if (error) throw error;
           
-          // Encode user data for URL
-          const encodedUserData = encodeURIComponent(JSON.stringify(userData));
+          // Success
+          formMessage.textContent = 'Success! Check your email to verify your account.';
+          formMessage.className = 'form-message success';
+          formMessage.style.display = 'block';
           
-          // Redirect to replyzeai.onrender.com with user data
-          window.location.href = `https://replyzeai.onrender.com/signin?user_data=${encodedUserData}`;
+          // Reset form
+          e.target.reset();
+          
+          showToast('Account created! Please check your email to verify your account.', 'success', 5000);
+          
+          // Optionally redirect after successful signup
+          setTimeout(() => {
+            // Redirect to dashboard or thank you page
+            window.location.href = '/welcome'; // Change to your desired URL
+          }, 3000);
           
         } catch (err) {
           console.error(err);
@@ -656,6 +685,7 @@ async function initializeApp() {
           formMessage.className = 'form-message error';
           formMessage.style.display = 'block';
           showToast(err.message || 'Signup failed', 'error', 5000);
+        } finally {
           btn.disabled = false; 
           btn.innerHTML = original;
         }
