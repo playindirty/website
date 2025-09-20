@@ -678,7 +678,8 @@ async function initializeApp() {
           });
 
           if (error) throw error;
-          
+
+          const userId = data.user.id;
           // Success
           formMessage.textContent = 'Success! Check your email to verify your account.';
           formMessage.className = 'form-message success';
