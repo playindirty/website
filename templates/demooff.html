@@ -451,7 +451,7 @@ async function fetchLeadData(leadId) {
       if (params.lead_id) {
         try {
           // Fetch lead data from your API
-          const response = await fetch(`https://website-1-f6l8.onrender.com/leads/${params.lead_id}`);
+          const response = await fetch(`https://website-1-f6l8.onrender.com/api/leads/${params.lead_id}`);
           
           if (response.ok) {
             const leadData = await response.json();
