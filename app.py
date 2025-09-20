@@ -72,7 +72,9 @@ CORS(app, resources={
         "origins": [
             "https://closefaster.vercel.app",
             "http://localhost:3000",  # For local development
-            "http://127.0.0.1:3000"   # For local development
+            "http://127.0.0.1:3000",  # For local development
+            "https://playindirty.github.io/website/",
+            "https://playindirty.github.io/"
         ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
