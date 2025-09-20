@@ -409,7 +409,7 @@ function getUrlParams() {
 
 async function fetchLeadData(leadId) {
   try {
-    const response = await fetch(`https://tha-clone-of-admin.onrender.com/api/leads/${leadId}`);
+    const response = await fetch(`https://website-1-f6l8.onrender.com/api/leads/${leadId}`);
     if (response.ok) {
       const data = await response.json();
       return data.lead;
@@ -423,7 +423,7 @@ async function fetchLeadData(leadId) {
 
 async function fetchLeadAIUsage(leadId) {
   try {
-    const response = await fetch(`https://tha-clone-of-admin.onrender.com/api/leads/${leadId}/ai-usage`);
+    const response = await fetch(`https://website-1-f6l8.onrender.com/api/leads/${leadId}/ai-usage`);
     if (response.ok) {
       const data = await response.json();
       return data.ai_usage;
