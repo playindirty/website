@@ -442,6 +442,46 @@ async function fetchLeadData(leadId) {
   }
 }
 
+// -----------------------------
+    // Fetch lead data and prefill form
+    // -----------------------------
+    async function fetchAndPrefillLeadData() {
+      const params = getUrlParams();
+      
+      if (params.lead_id) {
+        try {
+          // Fetch lead data from your API
+          const response = await fetch(`https://website-1-f6l8.onrender.com/leads/${params.lead_id}`);
+          
+          if (response.ok) {
+            const leadData = await response.json();
+            
+            // Prefill name field if available
+            if (leadData.name) {
+              const nameInput = document.getElementById('name');
+              if (nameInput) {
+                nameInput.value = leadData.name;
+              }
+            }
+            
+            // Prefill email field if available
+            if (leadData.email) {
+              const emailInput = document.getElementById('email');
+              if (emailInput) {
+                emailInput.value = leadData.email;
+              }
+            }
+            
+            // Store lead data for later use if needed
+            window.currentLeadData = leadData;
+          }
+        } catch (error) {
+          console.error('Error fetching lead data:', error);
+          // Silently fail - the form will just not be prefilled
+        }
+      }
+    }
+    
 async function fetchLeadAIUsage(leadId) {
   try {
     const response = await fetch(`https://website-1-f6l8.onrender.com/api/leads/${leadId}/ai-usage`);
@@ -495,7 +535,9 @@ async function initializeApp() {
   initProgressBar();
   initRateLimiting();
   attachHandlers();
-  
+
+  // Fetch and prefill lead data if lead_id is present
+      await fetchAndPrefillLeadData();
   // Check for lead ID in URL parameters
   const params = getUrlParams();
   if (params.lead_id) {
