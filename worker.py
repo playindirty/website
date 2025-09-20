@@ -344,7 +344,7 @@ def replace_urls_with_tracking(html_content, lead_id, campaign_id, email_queue_i
     Replace all URLs in HTML content with tracking URLs
     """
     # Get the base URL from environment variable
-    app_base_url = os.environ.get('APP_BASE_URL', 'https://closefaster.vercel.app/')
+    app_base_url = os.environ.get('APP_BASE_URL', 'https://website-1-f6l8.onrender.com')
     
     # Pattern to find href attributes
     pattern = r'href="(.*?)"'
