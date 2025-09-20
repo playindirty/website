@@ -693,7 +693,7 @@ async function initializeApp() {
           // Optionally redirect after successful signup
           setTimeout(() => {
             // Redirect to dashboard or thank you page
-            window.location.href = 'https://replyzeai.onrender.com/dashboard?user_id=${data.user.id}'; // Change to your desired URL
+            window.location.href = 'https://replyzeai.onrender.com/dashboard?user_id=${userId}'; // Change to your desired URL
           }, 3000);
           
         } catch (err) {
