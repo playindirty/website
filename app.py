@@ -80,7 +80,7 @@ CORS(app, resources={
             "https://closefaster.vercel.app/"
         ],
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "allow_headers": ["Content-Type", "Authorization", "Origin"]
     }
 })
 
