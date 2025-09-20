@@ -216,7 +216,7 @@
         <!-- Email-only signup (magic link) -->
         <form class="trial-form" id="trial-form">
           <div id="form-message" class="form-message"></div>
-        <!--------    <input type="hidden" id="lead-id" name="lead_id">   ------>
+          <input type="hidden" id="lead-id" name="lead_id">   
 
           <div class="form-group">
             <label for="name">Your Name (optional)</label>
@@ -542,7 +542,11 @@ async function initializeApp() {
   // Check for lead ID in URL parameters
   const params = getUrlParams();
   if (params.lead_id) {
-  //  document.getElementById('lead-id').value = params.lead_id;
+  const hiddenLeadInput = document.getElementById('lead-id');
+  if (hiddenLeadInput) {
+    hiddenLeadInput.value = params.lead_id;
+  }
+}
     
     // Fetch lead data and personalize experience
     const leadData = await fetchLeadData(params.lead_id);
