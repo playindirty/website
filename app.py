@@ -13,7 +13,7 @@ import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from flask import Flask, request, redirect, render_template, jsonify, current_app
 from dotenv import load_dotenv
 from supabase import create_client
