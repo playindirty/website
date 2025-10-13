@@ -594,44 +594,36 @@ def generate_reply_prompt():
     """
 
     try:
-        # Use the GitHub AI models
-        GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
-        MODELS = os.environ.get("GH_MODELS", "openai/gpt-4o-mini").split(",")
+        # Use Groq API instead of GitHub AI models
+        GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+        if not GROQ_API_KEY:
+            return jsonify({"error": "Groq API key not configured"}), 500
         
-        full_response = ""
-        for model in MODELS:
-            try:
-                resp = requests.post(
-                    "https://models.github.ai/inference/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {GITHUB_TOKEN}",
-                        "Accept": "application/vnd.github+json",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": model.strip(),
-                        "messages": [
-                            {"role": "system", "content": "You are a professional real estate agent."},
-                            {"role": "user",   "content": enhanced_prompt}
-                        ],
-                        "temperature": 0.7,
-                        "top_p": 0.7,
-                        "max_tokens": 512
-                    },
-                    timeout=30
-                )
-                
-                if resp.status_code == 200:
-                    full_response = resp.json()["choices"][0]["message"]["content"].strip()
-                    break
-                elif resp.status_code in (404, 429):
-                    continue
-            except Exception as e:
-                print(f"Error with model {model}: {str(e)}")
-                continue
+        # Make request to Groq API
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama-3.1-8b-instant",  # You can change this to other Groq models
+                "messages": [
+                    {"role": "system", "content": "You are a professional real estate agent. Generate concise, professional responses that help convert leads into appointments."},
+                    {"role": "user", "content": enhanced_prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1024,
+                "top_p": 0.8
+            },
+            timeout=30
+        )
         
-        if not full_response:
-            return jsonify({"error": "All models failed or were rate-limited"}), 500
+        if response.status_code != 200:
+            return jsonify({"error": f"Groq API error: {response.status_code}"}), 500
+        
+        result = response.json()
+        full_response = result["choices"][0]["message"]["content"].strip()
         
         # Parse the response to extract reply and follow-ups
         sections = {}
@@ -666,12 +658,16 @@ def generate_reply_prompt():
         # Remove any empty follow-ups
         follow_ups = [fu for fu in follow_ups if fu]
         
-        return jsonify({
+        # Add CORS headers to the response
+        response = jsonify({
             "reply": reply,
             "follow_ups": follow_ups
         })
+        response.headers.add("Access-Control-Allow-Origin", "https://closefaster.vercel.app")
+        return response
+        
     except Exception as e:
-        print(f"Error generating reply: {str(e)}")
+        print(f"Error generating reply with Groq: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/record-ai-usage', methods=['POST'])
