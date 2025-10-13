@@ -291,23 +291,41 @@
     // Function to use template examples
     // -----------------------------
     function useTemplate(index) {
-      const example = templateExamples[index];
-      const demoInput = document.getElementById('demo-input');
-      const aiResponse = document.getElementById('ai-response');
-      const responseContainer = document.getElementById('response-container');
-      
-      demoInput.value = example.lead;
-      aiResponse.textContent = example.response;
-      responseContainer.style.display = 'block';
-      
-      // Scroll to response
-      setTimeout(() => {
-        responseContainer.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start' 
-        });
-      }, 100);
+  const example = templateExamples[index];
+  const demoInput = document.getElementById('demo-input');
+  const aiResponse = document.getElementById('ai-response');
+  const responseContainer = document.getElementById('response-container');
+  
+  demoInput.value = example.lead;
+  aiResponse.textContent = example.response;
+  responseContainer.style.display = 'block';
+  
+  // Record AI usage for template examples too
+  const params = getUrlParams();
+  const leadId = params.lead_id;
+  if (leadId) {
+    try {
+      fetch('https://website-1-f6l8.onrender.com/api/record-ai-usage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ lead_id: leadId })
+      });
+      console.log('AI usage recorded for template example, lead:', leadId);
+    } catch (recordError) {
+      console.error('Failed to record AI usage for template:', recordError);
     }
+  }
+  
+  // Scroll to response
+  setTimeout(() => {
+    responseContainer.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'start' 
+    });
+  }, 100);
+}
 
     // -----------------------------
     // Toast helper
@@ -569,92 +587,113 @@ async function initializeApp() {
     // Generate response - FIXED VERSION
     // -----------------------------
     async function generateResponse() {
-      const inputEl = document.getElementById('demo-input');
-      const input = inputEl ? inputEl.value.trim() : '';
-      const responseContainer = document.getElementById('response-container');
-      const aiResponse = document.getElementById('ai-response');
-      const generateBtn = document.getElementById('generate-btn');
+  const inputEl = document.getElementById('demo-input');
+  const input = inputEl ? inputEl.value.trim() : '';
+  const responseContainer = document.getElementById('response-container');
+  const aiResponse = document.getElementById('ai-response');
+  const generateBtn = document.getElementById('generate-btn');
 
-      if (!input) { 
-        showToast('Please paste a lead message or use our example.', 'error'); 
-        return; 
-      }
+  if (!input) { 
+    showToast('Please paste a lead message or use our example.', 'error'); 
+    return; 
+  }
 
-      // If not unlimited, check count
-      if (!aiUnlimited && aiCount <= 0) {
-        showToast('No more free AI responses. Please sign up for a free trial.', 'error');
-        document.querySelector('#trial').scrollIntoView({ behavior: 'smooth' });
-        return;
-      }
+  // If not unlimited, check count
+  if (!aiUnlimited && aiCount <= 0) {
+    showToast('No more free AI responses. Please sign up for a free trial.', 'error');
+    document.querySelector('#trial').scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
 
-      // If not unlimited, decrement
-      if (!aiUnlimited && typeof aiCount === 'number') { 
-        aiCount--; 
-        updateTrialsCookie(); 
-        document.getElementById('ai-counter').textContent = aiCount; 
-      }
+  // If not unlimited, decrement
+  if (!aiUnlimited && typeof aiCount === 'number') { 
+    aiCount--; 
+    updateTrialsCookie(); 
+    document.getElementById('ai-counter').textContent = aiCount; 
+  }
 
-      // Show loading state
-      if (generateBtn) { 
-        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; 
-        generateBtn.disabled = true; 
-      }
-      if (aiResponse) aiResponse.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating your response...';
-      if (responseContainer) responseContainer.style.display = 'block';
+  // Show loading state
+  if (generateBtn) { 
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; 
+    generateBtn.disabled = true; 
+  }
+  if (aiResponse) aiResponse.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating your response...';
+  if (responseContainer) responseContainer.style.display = 'block';
 
-      try {
-        // Try to call the API first
-        const response = await fetch('https://website-1-f6l8.onrender.com/api/generate-reply-prompt', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ prompt: input })
-        });
+  try {
+    // Get lead_id from URL parameters
+    const params = getUrlParams();
+    const leadId = params.lead_id;
 
-        if (response.ok) {
-          const data = await response.json();
-          aiResponse.textContent = data.reply;
-        } else {
-          // If API fails, use our fallback logic
-          throw new Error('API not available');
-        }
-      } catch (err) {
-        console.log('API call failed, using fallback response:', err);
-        // Fallback: Generate a response based on keywords
-        let responseText = "Hi there! Thanks for reaching out. I'd be happy to help you with your inquiry. When would be a good time to connect?";
-        
-        // Check for keywords in the input to generate a more specific response
-        const inputLower = input.toLowerCase();
-        
-        if (inputLower.includes('open house')) {
-          responseText = "Thanks for your interest in our open house! We'd love to have you visit. What time were you thinking of stopping by?";
-        } else if (inputLower.includes('price') || inputLower.includes('how much')) {
-          responseText = "I'd be happy to discuss pricing options with you. The property is competitively priced for the area. Would you like to schedule a time to see it in person?";
-        } else if (inputLower.includes('tour') || inputLower.includes('showing') || inputLower.includes('see')) {
-          responseText = "Great! I'd be happy to schedule a showing for you. What days and times work best for your schedule?";
-        } else if (inputLower.includes('information') || inputLower.includes('info') || inputLower.includes('details')) {
-          responseText = "I'd be happy to provide more information about the property. It features modern amenities and a great location. What specific details are you most interested in?";
-        }
-        
-        aiResponse.textContent = responseText;
-        showToast('Using demo response (API unavailable)', 'info');
-      } finally {
-        if (generateBtn) { 
-          generateBtn.innerHTML = '<i class="fas fa-robot"></i> Generate AI Response'; 
-          generateBtn.disabled = false; 
-        }
-        if (responseContainer) responseContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-        // If a non-unlimited session and aiCount hits 0, nudge to signup
-        if (!aiUnlimited && aiCount === 0) {
-          setTimeout(() => { 
-            showToast("You've used your free AI responses! Start your free trial for unlimited access.", 'info'); 
-            document.querySelector('#trial').scrollIntoView({ behavior: 'smooth' }); 
-          }, 900);
+    // Try to call the API first
+    const response = await fetch('https://website-1-f6l8.onrender.com/api/generate-reply-prompt', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt: input })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      aiResponse.textContent = data.reply;
+      
+      // RECORD AI USAGE if we have a lead_id
+      if (leadId) {
+        try {
+          await fetch('https://website-1-f6l8.onrender.com/api/record-ai-usage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ lead_id: leadId })
+          });
+          console.log('AI usage recorded for lead:', leadId);
+        } catch (recordError) {
+          console.error('Failed to record AI usage:', recordError);
+          // Don't show error to user - this is just analytics
         }
       }
+    } else {
+      // If API fails, use our fallback logic
+      throw new Error('API not available');
     }
+  } catch (err) {
+    console.log('API call failed, using fallback response:', err);
+    // Fallback: Generate a response based on keywords
+    let responseText = "Hi there! Thanks for reaching out. I'd be happy to help you with your inquiry. When would be a good time to connect?";
+    
+    // Check for keywords in the input to generate a more specific response
+    const inputLower = input.toLowerCase();
+    
+    if (inputLower.includes('open house')) {
+      responseText = "Thanks for your interest in our open house! We'd love to have you visit. What time were you thinking of stopping by?";
+    } else if (inputLower.includes('price') || inputLower.includes('how much')) {
+      responseText = "I'd be happy to discuss pricing options with you. The property is competitively priced for the area. Would you like to schedule a time to see it in person?";
+    } else if (inputLower.includes('tour') || inputLower.includes('showing') || inputLower.includes('see')) {
+      responseText = "Great! I'd be happy to schedule a showing for you. What days and times work best for your schedule?";
+    } else if (inputLower.includes('information') || inputLower.includes('info') || inputLower.includes('details')) {
+      responseText = "I'd be happy to provide more information about the property. It features modern amenities and a great location. What specific details are you most interested in?";
+    }
+    
+    aiResponse.textContent = responseText;
+    showToast('Using demo response (API unavailable)', 'info');
+  } finally {
+    if (generateBtn) { 
+      generateBtn.innerHTML = '<i class="fas fa-robot"></i> Generate AI Response'; 
+      generateBtn.disabled = false; 
+    }
+    if (responseContainer) responseContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // If a non-unlimited session and aiCount hits 0, nudge to signup
+    if (!aiUnlimited && aiCount === 0) {
+      setTimeout(() => { 
+        showToast("You've used your free AI responses! Start your free trial for unlimited access.", 'info'); 
+        document.querySelector('#trial').scrollIntoView({ behavior: 'smooth' }); 
+      }, 900);
+    }
+  }
+}
 
     // -----------------------------
     // Progressive copy: allow first copy, prompt signup on second
