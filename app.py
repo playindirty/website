@@ -311,8 +311,25 @@ def api_import_leads():
         if not file.filename.endswith('.csv'):
             return jsonify({"error": "Only CSV files are supported"}), 400
         
-        # Read and parse CSV
-        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        # Read file with error handling for encoding issues
+        file_content = file.read()
+        
+        # Try different encodings
+        encodings = ['utf-8', 'latin-1', 'windows-1252', 'iso-8859-1']
+        decoded_content = None
+        
+        for encoding in encodings:
+            try:
+                decoded_content = file_content.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        
+        if decoded_content is None:
+            # If all encodings fail, use latin-1 which never fails but may replace some characters
+            decoded_content = file_content.decode('latin-1')
+        
+        stream = io.StringIO(decoded_content, newline=None)
         csv_input = csv.DictReader(stream)
         
         # Check required columns
@@ -325,11 +342,21 @@ def api_import_leads():
             if not row.get('email'):
                 continue
                 
-            # Clean the row data
+            # Clean the row data and handle encoding issues
             cleaned_row = {}
             for key, value in row.items():
                 if value is not None:
-                    cleaned_row[key.strip().lower()] = value.strip()
+                    # Clean the key and value
+                    clean_key = key.strip().lower()
+                    clean_value = value.strip()
+                    
+                    # Replace common problematic characters
+                    if clean_value:
+                        clean_value = clean_value.replace('â€™', "'")  # Common smart quote issue
+                        clean_value = clean_value.replace('â€"', '-')  # Common em dash issue
+                        clean_value = clean_value.replace('â€"', '"')  # Common quote issue
+                    
+                    cleaned_row[clean_key] = clean_value
             
             email = cleaned_row.get('email', '').lower()
             
