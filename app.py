@@ -77,7 +77,9 @@ CORS(app, resources={
             "https://playindirty.github.io/",
             "https://closefaster.vercel.app/templates/demooff",
             "https://closefaster.vercel.app/templates/",
-            "https://closefaster.vercel.app/"
+            "https://closefaster.vercel.app/",
+            "replyzeai.com",
+            "replyzeai.com/demooff",
         ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "Origin"]
