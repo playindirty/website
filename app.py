@@ -65,19 +65,18 @@ from flask_cors import CORS
 
 load_dotenv()
 app = Flask(__name__, template_folder="templates")
-
+#"https://closefaster.vercel.app",
+#            "http://localhost:3000",  # For local development
+ #           "http://127.0.0.1:3000",  # For local development
+  #          "https://playindirty.github.io/website/",
+   #         "https://playindirty.github.io/",
+    #        "https://closefaster.vercel.app/templates/demooff",
+     #       "https://closefaster.vercel.app/templates/",
+      #      "https://closefaster.vercel.app/",
 # Add CORS support - allow requests from your Vercel domain
 CORS(app, resources={
     r"/api/*": {
         "origins": [
-            "https://closefaster.vercel.app",
-            "http://localhost:3000",  # For local development
-            "http://127.0.0.1:3000",  # For local development
-            "https://playindirty.github.io/website/",
-            "https://playindirty.github.io/",
-            "https://closefaster.vercel.app/templates/demooff",
-            "https://closefaster.vercel.app/templates/",
-            "https://closefaster.vercel.app/",
             "replyzeai.com",
             "replyzeai.com/demooff",
         ],
