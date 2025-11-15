@@ -691,7 +691,7 @@ def generate_reply_prompt():
             "reply": reply,
             "follow_ups": follow_ups
         })
-        response.headers.add("Access-Control-Allow-Origin", "https://closefaster.vercel.app")
+        response.headers.add("Access-Control-Allow-Origin", "https://replyzeai.com")
         return response
         
     except Exception as e:
