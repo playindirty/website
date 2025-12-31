@@ -100,7 +100,7 @@ def get_all_accounts_with_capacity():
             count = 0
             
         # Calculate remaining capacity
-        remaining = 50 - count
+        remaining = 100 - count
         
         if remaining > 0:
             accounts_with_capacity.append({
@@ -251,10 +251,10 @@ def send_queued():
                 
                 # Update our local count
                 account_data["sent_today"] = new_count
-                account_data["remaining"] = 50 - new_count
+                account_data["remaining"] = 100 - new_count
                 
                 # If this account is now at capacity, remove it from available accounts
-                if new_count >= 50:
+                if new_count >= 100:
                     available_accounts.pop(account_index)
                     total_accounts = len(available_accounts)
                     if total_accounts == 0:
