@@ -131,7 +131,7 @@ def api_get_account_status():
                 "email": account["email"],
                 "display_name": account["display_name"],
                 "sent_today": count,
-                "remaining_today": 50 - count
+                "remaining_today": 100 - count
             })
         
         return jsonify({"ok": True, "accounts": statuses}), 200
