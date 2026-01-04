@@ -152,7 +152,7 @@ def send_queued():
         .select("*")
         .is_("sent_at", "null")
         .lte("scheduled_for", current_time.isoformat())
-        .limit(200)
+        .limit(100)
         .execute()
     )
 
