@@ -325,33 +325,24 @@ def schedule_followup(q, sequence, account_email):
         print(f"Error scheduling follow-up: {str(e)}")
 
 def render_email_template(template, lead_data):
-    """Replace template variables including those nested in custom_fields"""
+    """Replace template variables with lead data and preserve whitespace"""
     rendered = template
     
-    # 1. Create a flattened dictionary to hold all possible variables
-    flat_data = lead_data.copy()
-    
-    # 2. Pull everything out of custom_fields to the top level
-    if 'custom_fields' in flat_data and isinstance(flat_data['custom_fields'], dict):
-        for cf_key, cf_value in flat_data['custom_fields'].items():
-            flat_data[cf_key] = cf_value
-
-    # 3. Replace placeholders (supports {street}, {last_sale}, etc.)
-    for key, value in flat_data.items():
+    for key, value in lead_data.items():
         if value is None:
             value = ""
-        
-        # Replace the standard placeholder
+            
+        # 1. Replace standard underscores (e.g., {ai_hooks})
         placeholder = "{" + str(key) + "}"
         rendered = rendered.replace(placeholder, str(value))
         
-        # Also handle underscores vs spaces for AI Hooks/Last Sale
-        # This ensures {ai_hooks} or {ai hooks} both work
+        # 2. Replace version with spaces (e.g., {ai hooks})
+        # This makes it user-friendly if they copy CSV headers exactly
         key_with_space = str(key).replace('_', ' ')
         placeholder_space = "{" + key_with_space + "}"
         rendered = rendered.replace(placeholder_space, str(value))
     
-    # Preserve line breaks and spaces for HTML formatting
+    # Preserve line breaks and spaces by converting them to HTML
     rendered = rendered.replace('\n', '<br>')
     rendered = rendered.replace('  ', '&nbsp;&nbsp;')
     
