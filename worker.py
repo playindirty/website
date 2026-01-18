@@ -325,33 +325,33 @@ def schedule_followup(q, sequence, account_email):
         print(f"Error scheduling follow-up: {str(e)}")
 
 def render_email_template(template, lead_data):
-    """
-    Enhanced renderer: Flattens custom_fields so {street} works 
-    even if it's stored inside a JSON column.
-    """
+    """Replace template variables including those nested in custom_fields"""
     rendered = template
     
-    # 1. Create a flat copy of all data
+    # 1. Create a flattened dictionary to hold all possible variables
     flat_data = lead_data.copy()
     
-    # 2. If custom_fields exists (from Supabase), pull those values to the top level
+    # 2. Pull everything out of custom_fields to the top level
     if 'custom_fields' in flat_data and isinstance(flat_data['custom_fields'], dict):
         for cf_key, cf_value in flat_data['custom_fields'].items():
             flat_data[cf_key] = cf_value
-            
-    # 3. Perform the replacement
+
+    # 3. Replace placeholders (supports {street}, {last_sale}, etc.)
     for key, value in flat_data.items():
         if value is None:
             value = ""
-        # Support both {Street} and {street} by making the key lowercase
-        placeholder = "{" + str(key).lower() + "}"
+        
+        # Replace the standard placeholder
+        placeholder = "{" + str(key) + "}"
         rendered = rendered.replace(placeholder, str(value))
         
-        # Also support the original key case just in case
-        placeholder_orig = "{" + str(key) + "}"
-        rendered = rendered.replace(placeholder_orig, str(value))
+        # Also handle underscores vs spaces for AI Hooks/Last Sale
+        # This ensures {ai_hooks} or {ai hooks} both work
+        key_with_space = str(key).replace('_', ' ')
+        placeholder_space = "{" + key_with_space + "}"
+        rendered = rendered.replace(placeholder_space, str(value))
     
-    # Preserve line breaks for HTML
+    # Preserve line breaks and spaces for HTML formatting
     rendered = rendered.replace('\n', '<br>')
     rendered = rendered.replace('  ', '&nbsp;&nbsp;')
     
