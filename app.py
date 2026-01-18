@@ -298,106 +298,157 @@ def api_get_lead_lists():
 
 # Update the api_import_leads function with better error handling
 @app.route('/api/leads/import', methods=['POST'])
+@app.route('/api/leads/import', methods=['POST'])
 def api_import_leads():
     try:
+        # ---------- Validate upload ----------
         if 'file' not in request.files:
             return jsonify({"error": "No file uploaded"}), 400
-        
+
         file = request.files['file']
         list_name = request.form.get('list_name', 'Imported List')
-        
-        if file.filename == '':
-            return jsonify({"error": "No file selected"}), 400
-        
-        if not file.filename.endswith('.csv'):
+
+        if not file.filename or not file.filename.lower().endswith('.csv'):
             return jsonify({"error": "Only CSV files are supported"}), 400
-        
-        # Read file with error handling for encoding issues
-        file_content = file.read()
-        
-        # Try different encodings
-        encodings = ['utf-8', 'latin-1', 'windows-1252', 'iso-8859-1']
-        decoded_content = None
-        
-        for encoding in encodings:
+
+        # ---------- Decode file safely ----------
+        raw = file.read()
+        decoded = None
+        for enc in ('utf-8', 'latin-1', 'windows-1252', 'iso-8859-1'):
             try:
-                decoded_content = file_content.decode(encoding)
+                decoded = raw.decode(enc)
                 break
             except UnicodeDecodeError:
                 continue
-        
-        if decoded_content is None:
-            # If all encodings fail, use latin-1 which never fails but may replace some characters
-            decoded_content = file_content.decode('latin-1')
-        
-        stream = io.StringIO(decoded_content, newline=None)
-        csv_input = csv.DictReader(stream)
-        
-        # Check required columns
-        if 'email' not in csv_input.fieldnames:
-            return jsonify({"error": "CSV must contain an 'email' column"}), 400
-        
-        # Process rows and remove duplicates
-        # Process rows and remove duplicates
-        leads_dict = {}  
-        for row in csv_input:
-            if not row.get('email'):
+        if decoded is None:
+            decoded = raw.decode('latin-1')
+
+        stream = io.StringIO(decoded)
+        reader = csv.DictReader(stream)
+
+        if not reader.fieldnames:
+            return jsonify({"error": "CSV has no headers"}), 400
+
+        if 'email' not in [h.lower() for h in reader.fieldnames]:
+            return jsonify({"error": "CSV must contain an email column"}), 400
+
+        # ---------- Header normalization ----------
+        HEADER_ALIASES = {
+            # AI hooks
+            "ai hook": "ai hooks",
+            "ai hooks": "ai hooks",
+            "ai_hook": "ai hooks",
+
+            # Last sale
+            "lastsale": "last sale",
+            "last sale": "last sale",
+            "last_sale": "last sale",
+
+            # Open house
+            "openhouse": "open house",
+            "open house": "open house",
+            "open_house": "open house",
+
+            # Name variants
+            "lastname": "last name",
+            "last_name": "last name",
+        }
+
+        STANDARD_FIELDS = {
+            "email",
+            "name",
+            "last name",
+            "city",
+            "brokerage",
+            "service",
+            "street",
+            "ai hooks",
+            "open house",
+            "last sale",
+        }
+
+        leads_by_email = {}
+
+        # ---------- Process rows ----------
+        for row in reader:
+            if not row:
                 continue
-                
-            # Clean the row data (lowercase keys, stripped whitespace)
-            cleaned_row = {k.strip().lower(): v.strip() if v else '' for k, v in row.items()}
-            
-            email = cleaned_row.get('email', '').lower()
-            
-            # Skip if email is invalid
+
+            # Normalize keys + trim values
+            cleaned = {}
+            for k, v in row.items():
+                if not k:
+                    continue
+                key = k.strip().lower()
+                key = HEADER_ALIASES.get(key, key)
+                cleaned[key] = v.strip() if v else ""
+
+            email = cleaned.get("email", "").lower()
+            if not email:
+                continue
+
+            # Validate email
             try:
                 validate_email(email)
             except EmailNotValidError:
                 continue
-            
-            # MAP DIRECTLY TO YOUR DB COLUMNS
-            # Note: The dictionary keys must match your Supabase column names exactly
-            lead_data = {
-                "email": email,
-                "name": cleaned_row.get('name', ''),
-                "last_name": cleaned_row.get('last name', cleaned_row.get('last_name', '')),
-                "city": cleaned_row.get('city', ''),
-                "brokerage": cleaned_row.get('brokerage', ''),
-                "service": cleaned_row.get('service', ''),
-                "last_sale": cleaned_row.get('last sale', ''),
-                "open_house": cleaned_row.get('open house', ''),
-                "street": cleaned_row.get('street', ''),
-                "ai_hooks": cleaned_row.get('ai hooks', ''),
-                "list_name": list_name,
-                "custom_fields": {} # Keep this empty so data doesn't duplicate here
+
+            # Extract custom fields
+            custom_fields = {
+                k: v for k, v in cleaned.items()
+                if k not in STANDARD_FIELDS
             }
-            
-            # Keep only the last occurrence of each email
-            leads_dict[email] = lead_data
-        
-        leads = list(leads_dict.values())
-        
-        # Store in database
+
+            lead = {
+                "email": email,
+                "name": cleaned.get("name", ""),
+                "last_name": cleaned.get("last name", ""),
+                "city": cleaned.get("city", ""),
+                "brokerage": cleaned.get("brokerage", ""),
+                "service": cleaned.get("service", ""),
+                "street": cleaned.get("street", ""),
+                "ai_hooks": cleaned.get("ai hooks", ""),
+                "open_house": cleaned.get("open house", ""),
+                "last_sale": cleaned.get("last sale", ""),
+                "list_name": list_name,
+                "custom_fields": custom_fields
+            }
+
+            # Deduplicate by email (last wins)
+            leads_by_email[email] = lead
+
+        leads = list(leads_by_email.values())
+
+        # ---------- Insert into Supabase ----------
         if leads:
-            # Insert in chunks to avoid payload size issues
             CHUNK_SIZE = 100
-            imported_count = 0
             for i in range(0, len(leads), CHUNK_SIZE):
-                chunk = leads[i:i+CHUNK_SIZE]
-                result = supabase.table("leads").upsert(chunk, on_conflict="email").execute()
+                chunk = leads[i:i + CHUNK_SIZE]
+                result = supabase.table("leads") \
+                    .upsert(chunk, on_conflict="email") \
+                    .execute()
+
                 if getattr(result, "error", None):
-                    return jsonify({"error": "db_error", "detail": str(result.error)}), 500
-                imported_count += len(chunk)
-        
+                    return jsonify({
+                        "error": "db_error",
+                        "detail": str(result.error)
+                    }), 500
+
         return jsonify({
-            "ok": True, 
+            "ok": True,
             "imported": len(leads),
             "sample": leads[0] if leads else {}
         }), 200
-        
+
     except Exception as e:
-        app.logger.error("Error in api_import_leads: %s", traceback.format_exc())
-        return jsonify({"error": "internal_server_error", "detail": str(e)}), 500
+        current_app.logger.error(
+            "Lead import failed:\n%s", traceback.format_exc()
+        )
+        return jsonify({
+            "error": "internal_server_error",
+            "detail": str(e)
+        }), 500
+
 
 @app.route('/api/leads/<list_name>', methods=['GET'])
 def api_get_leads_by_list(list_name):
