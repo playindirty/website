@@ -374,13 +374,12 @@ def api_import_leads():
                 "city": cleaned_row.get('city', ''),
                 "brokerage": cleaned_row.get('brokerage', ''),
                 "service": cleaned_row.get('service', ''),
-                "last_sale": cleaned_row.get('last sale', ''),
-                "open_house": cleaned_row.get('open house', ''),
+                "last_sale": cleaned_row.get('last_sale', cleaned_row.get('last sale', '')),
+                "open_house": cleaned_row.get('open_house', cleaned_row.get('open house', '')),
                 "street": cleaned_row.get('street', ''),
-                "ai_hooks": cleaned_row.get('ai hooks', ''),
+                "ai_hooks": cleaned_row.get('ai_hooks', cleaned_row.get('ai hooks', '')),
                 "list_name": list_name
-           }    
-            }
+           }
             
             # Keep only the last occurrence of each email
             leads_dict[email] = lead_data
