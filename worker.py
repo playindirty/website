@@ -325,15 +325,33 @@ def schedule_followup(q, sequence, account_email):
         print(f"Error scheduling follow-up: {str(e)}")
 
 def render_email_template(template, lead_data):
-    """Replace template variables with lead data and preserve whitespace"""
+    """
+    Enhanced renderer: Flattens custom_fields so {street} works 
+    even if it's stored inside a JSON column.
+    """
     rendered = template
-    for key, value in lead_data.items():
+    
+    # 1. Create a flat copy of all data
+    flat_data = lead_data.copy()
+    
+    # 2. If custom_fields exists (from Supabase), pull those values to the top level
+    if 'custom_fields' in flat_data and isinstance(flat_data['custom_fields'], dict):
+        for cf_key, cf_value in flat_data['custom_fields'].items():
+            flat_data[cf_key] = cf_value
+            
+    # 3. Perform the replacement
+    for key, value in flat_data.items():
         if value is None:
             value = ""
-        placeholder = "{" + key + "}"
+        # Support both {Street} and {street} by making the key lowercase
+        placeholder = "{" + str(key).lower() + "}"
         rendered = rendered.replace(placeholder, str(value))
+        
+        # Also support the original key case just in case
+        placeholder_orig = "{" + str(key) + "}"
+        rendered = rendered.replace(placeholder_orig, str(value))
     
-    # Preserve line breaks and spaces by converting them to HTML
+    # Preserve line breaks for HTML
     rendered = rendered.replace('\n', '<br>')
     rendered = rendered.replace('  ', '&nbsp;&nbsp;')
     
