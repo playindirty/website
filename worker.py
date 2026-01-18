@@ -332,17 +332,17 @@ def render_email_template(template, lead_data):
         if value is None:
             value = ""
             
-        # 1. Replace standard underscores (e.g., {ai_hooks})
+        # 1. Handle standard keys (e.g., {city}, {ai_hooks})
         placeholder = "{" + str(key) + "}"
         rendered = rendered.replace(placeholder, str(value))
         
-        # 2. Replace version with spaces (e.g., {ai hooks})
-        # This makes it user-friendly if they copy CSV headers exactly
+        # 2. Handle keys with spaces (e.g., {ai hooks}, {last sale})
+        # This allows you to use the exact CSV header names in your templates
         key_with_space = str(key).replace('_', ' ')
         placeholder_space = "{" + key_with_space + "}"
         rendered = rendered.replace(placeholder_space, str(value))
     
-    # Preserve line breaks and spaces by converting them to HTML
+    # Convert newlines to HTML for proper email formatting
     rendered = rendered.replace('\n', '<br>')
     rendered = rendered.replace('  ', '&nbsp;&nbsp;')
     
