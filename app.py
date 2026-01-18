@@ -338,26 +338,14 @@ def api_import_leads():
             return jsonify({"error": "CSV must contain an 'email' column"}), 400
         
         # Process rows and remove duplicates
-        leads_dict = {}  # Use dictionary to track unique emails
+        # Process rows and remove duplicates
+        leads_dict = {}  
         for row in csv_input:
             if not row.get('email'):
                 continue
                 
-            # Clean the row data and handle encoding issues
-            cleaned_row = {}
-            for key, value in row.items():
-                if value is not None:
-                    # Clean the key and value
-                    clean_key = key.strip().lower()
-                    clean_value = value.strip()
-                    
-                    # Replace common problematic characters
-                    if clean_value:
-                        clean_value = clean_value.replace('â€™', "'")  # Common smart quote issue
-                        clean_value = clean_value.replace('â€"', '-')  # Common em dash issue
-                        clean_value = clean_value.replace('â€"', '"')  # Common quote issue
-                    
-                    cleaned_row[clean_key] = clean_value
+            # Clean the row data (lowercase keys, stripped whitespace)
+            cleaned_row = {k.strip().lower(): v.strip() if v else '' for k, v in row.items()}
             
             email = cleaned_row.get('email', '').lower()
             
@@ -367,19 +355,22 @@ def api_import_leads():
             except EmailNotValidError:
                 continue
             
+            # MAP DIRECTLY TO YOUR DB COLUMNS
+            # Note: The dictionary keys must match your Supabase column names exactly
             lead_data = {
                 "email": email,
                 "name": cleaned_row.get('name', ''),
-                "last_name": cleaned_row.get('last_name', cleaned_row.get('last name', '')),
+                "last_name": cleaned_row.get('last name', cleaned_row.get('last_name', '')),
                 "city": cleaned_row.get('city', ''),
                 "brokerage": cleaned_row.get('brokerage', ''),
                 "service": cleaned_row.get('service', ''),
-                "last_sale": cleaned_row.get('last_sale', cleaned_row.get('last sale', '')),
-                "open_house": cleaned_row.get('open_house', cleaned_row.get('open house', '')),
+                "last_sale": cleaned_row.get('last sale', ''),
+                "open_house": cleaned_row.get('open house', ''),
                 "street": cleaned_row.get('street', ''),
-                "ai_hooks": cleaned_row.get('ai_hooks', cleaned_row.get('ai hooks', '')),
-                "list_name": list_name
-           }
+                "ai_hooks": cleaned_row.get('ai hooks', ''),
+                "list_name": list_name,
+                "custom_fields": {} # Keep this empty so data doesn't duplicate here
+            }
             
             # Keep only the last occurrence of each email
             leads_dict[email] = lead_data
