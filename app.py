@@ -375,16 +375,16 @@ def api_import_leads():
                 "brokerage": cleaned_row.get('brokerage', ''),
                 "service": cleaned_row.get('service', ''),
                 "list_name": list_name,
-    # New Fields Added Here:
+                # These fields are now explicitly extracted just like city/brokerage
                 "custom_fields": {
-                   "last_sale": cleaned_row.get('last sale', ''),
-                   "open_house": cleaned_row.get('open house', ''),
-                   "street": cleaned_row.get('street', ''),
-                   "ai_hooks": cleaned_row.get('ai hooks', ''),
-        # Keeps any other columns as well
-                   **{k: v for k, v in cleaned_row.items() if k not in ['email', 'name', 'last_name', 'city', 'brokerage', 'service', 'list_name']}
-    }
-}
+                    "last_sale": cleaned_row.get('last sale', ''),
+                    "open_house": cleaned_row.get('open house', ''),
+                    "street": cleaned_row.get('street', ''),
+                    "ai_hooks": cleaned_row.get('ai hooks', ''),
+                    # Captures any other unexpected columns
+                    **{k: v for k, v in cleaned_row.items() if k not in ['email', 'name', 'last_name', 'last name', 'city', 'brokerage', 'service', 'list_name']}
+                }
+            }
             
             # Keep only the last occurrence of each email
             leads_dict[email] = lead_data
